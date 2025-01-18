@@ -41,7 +41,9 @@
     "react-native-webview": "13.12.5",
     "@expo/metro-runtime": "~4.0.0",
     "expo-image": "~2.0.4",
-    "expo-image-picker": "~16.0.4"
+    "expo-image-picker": "~16.0.4",
+    "react-native-view-shot": "~4.0.3",
+    "expo-media-library": "~17.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
