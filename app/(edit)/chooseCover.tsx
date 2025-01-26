@@ -1,78 +1,72 @@
 import { Text, View, StyleSheet, Image, Pressable, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
-const SquareImage = require('@/assets/images/chooseBook_01.png');
-const RectangleImage = require('@/assets/images/chooseBook_02.png');
+const Cover1Image = require('@/assets/images/chooseCover_01.webp');
+const Cover2Image = require('@/assets/images/chooseCover_02.webp');
+const Cover3Image = require('@/assets/images/chooseCover_03.webp');
 
-type BookSize = {
+type CoverOption = {
   id: string;
-  type: 'vertical' | 'square' | 'horizontal';
+  type: string;
   title: string;
-  size: string;
-  price: string;
   image: any;
 };
 
-const BOOK_SIZES: BookSize[] = [
+const COVER_OPTIONS: CoverOption[] = [
   {
     id: '1',
-    type: 'vertical',
-    title: 'たてなが',
-    size: '102×102mm',
-    price: '1,360円(税込)より',
-    image: SquareImage,
+    type: 'orange',
+    title: 'オレンジ',
+    image: Cover1Image,
   },
   {
     id: '2',
-    type: 'square',
-    title: 'ましかく',
-    size: '102×102mm',
-    price: '1,360円(税込)より',
-    image: SquareImage,
+    type: 'sky-blue',
+    title: '水色',
+    image: Cover2Image,
   },
   {
     id: '3',
-    type: 'horizontal',
-    title: 'よこなが',
-    size: '102×152mm',
-    price: '1,750円(税込)より',
-    image: RectangleImage,
+    type: 'gray',
+    title: 'グレー',
+    image: Cover3Image,
   },
 ];
 
-export default function ChooseBookScreen() {
-  const handleChooseSize = (size: BookSize['type']) => {
-    router.push({
-      pathname: '/(edit)/chooseCover',
-      params: { size }
-    });
+export default function ChooseCoverScreen() {
+  const { size } = useLocalSearchParams<{ size: string }>();
+
+  const handleChooseCover = (coverType: CoverOption['type']) => {
+    // TODO: カバー選択後の処理
+    console.log(`Selected cover: ${coverType} for size: ${size}`);
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>サイズ選択</Text>
+        <Text style={styles.headerTitle}>カバーデザイン選択</Text>
       </View>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.contentContainer}>
-          {BOOK_SIZES.map((book, index) => (
+          {COVER_OPTIONS.map((cover, index) => (
             <Pressable
-              key={book.id}
+              key={cover.id}
               style={[
                 styles.option,
                 index > 0 && styles.middleOption,
-                index === BOOK_SIZES.length - 1 && styles.lastOption,
+                index === COVER_OPTIONS.length - 1 && styles.lastOption,
               ]}
-              onPress={() => handleChooseSize(book.type)}
+              onPress={() => handleChooseCover(cover.type)}
             >
-              <Image source={book.image} style={styles.image} resizeMode="cover" />
+              <Image source={cover.image} style={styles.image} resizeMode="cover" />
               <View style={styles.textContainer}>
-                <Text style={styles.title}>{book.title}</Text>
-                <Text style={styles.size}>{book.size}</Text>
-                <Text style={styles.price}>{book.price}</Text>
+                <Text style={styles.title}>{cover.title}</Text>
               </View>
             </Pressable>
           ))}
+          <View style={styles.content}>
+            <Text>選択されたサイズ: {size}</Text>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -131,14 +125,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 4,
-  },
-  size: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 4,
-  },
-  price: {
-    fontSize: 16,
-    color: '#333',
   },
 });
