@@ -20,6 +20,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
+          headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'home-sharp' : 'home-outline'} color={color} size={24} />
           ),
@@ -29,6 +30,7 @@ export default function TabLayout() {
         name="news"
         options={{
           title: 'News',
+          headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'newspaper' : 'newspaper-outline'} color={color} size={24}/>
           ),
@@ -38,6 +40,7 @@ export default function TabLayout() {
         name="about"
         options={{
           title: 'About',
+          headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'information-circle' : 'information-circle-outline'} color={color} size={24}/>
           ),
@@ -47,6 +50,7 @@ export default function TabLayout() {
         name="order"
         options={{
           title: 'Order',
+          headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'cart' : 'cart-outline'} color={color} size={24}/>
           ),
