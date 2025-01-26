@@ -27,7 +27,7 @@ export default function RootLayout() {
           headerTitleStyle: {
             fontWeight: 'bold',
           },
-          headerTitle: 'ZIEN',
+          headerTitle: 'ZINE',
           headerTitleAlign: 'center',
           headerShown: true,
           drawerPosition: 'left',
