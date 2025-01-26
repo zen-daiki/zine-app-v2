@@ -6,6 +6,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { type ImageSource } from "expo-image";
 import { captureRef } from 'react-native-view-shot';
 import domtoimage from 'dom-to-image';
+import { router } from 'expo-router';
 
 import Button from '@/components/Button';
 import ImageViewer from '@/components/ImageViewer';
@@ -54,6 +55,10 @@ export default function Index() {
 
   const onModalClose = () => {
     setIsModalVisible(false);
+  };
+
+  const handleCreateNew = () => {
+    router.push('/(edit)/chooseBook');
   };
 
   const onSaveImageAsync = async () => {
@@ -107,8 +112,9 @@ export default function Index() {
         </View>
       ) : (
         <View style={styles.footerContainer}>
-          <Button theme="primary" label="Choose a photo" onPress={pickImageAsync} />
-          <Button label="Use this photo" onPress={() => setShowAppOptions(true)} />
+          <Button theme="primary" label="新しく作成する" onPress={handleCreateNew} />
+          <Button label="写真を選択する" onPress={pickImageAsync} />
+          {/* <Button label="この写真を使用する" onPress={() => setShowAppOptions(true)} /> */}
         </View>
       )}
       <EmojiPicker isVisible={isModalVisible} onClose={onModalClose}>
