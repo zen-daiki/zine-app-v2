@@ -39,12 +39,14 @@ export default function RootLayout() {
           drawerActiveBackgroundColor: '#f0f0f0',
           drawerActiveTintColor: '#333',
           drawerInactiveTintColor: '#666',
+          drawerItemStyle: { display: 'none' }
         }}
       >
         <Drawer.Screen
           name="(tabs)"
           options={{
             drawerLabel: 'ホーム',
+            drawerItemStyle: { display: 'flex' },
             headerLeft: () => (
               <Pressable
                 onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
@@ -61,6 +63,7 @@ export default function RootLayout() {
           options={{
             drawerLabel: 'よくある質問',
             title: 'よくある質問',
+            drawerItemStyle: { display: 'flex' }
           }}
         />
         <Drawer.Screen
@@ -68,6 +71,7 @@ export default function RootLayout() {
           options={{
             drawerLabel: 'お問い合わせ',
             title: 'お問い合わせ',
+            drawerItemStyle: { display: 'flex' }
           }}
         />
         <Drawer.Screen
@@ -75,6 +79,7 @@ export default function RootLayout() {
           options={{
             drawerLabel: 'プライバシーポリシー',
             title: 'プライバシーポリシー',
+            drawerItemStyle: { display: 'flex' }
           }}
         />
         <Drawer.Screen
@@ -82,12 +87,7 @@ export default function RootLayout() {
           options={{
             drawerLabel: '利用規約',
             title: '利用規約',
-          }}
-        />
-        <Drawer.Screen
-          name="+not-found"
-          options={{
-            drawerItemStyle: { display: 'none' }
+            drawerItemStyle: { display: 'flex' }
           }}
         />
       </Drawer>
