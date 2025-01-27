@@ -8,10 +8,10 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 
 type DrawerParamList = {
   '(tabs)': undefined;
-  'faq': undefined;
-  'contact': undefined;
-  'privacy': undefined;
-  'terms': undefined;
+  '(menu)/faq': undefined;
+  '(menu)/contact': undefined;
+  '(menu)/privacy': undefined;
+  '(menu)/terms': undefined;
 };
 
 type NavigationType = DrawerNavigationProp<DrawerParamList>;
@@ -59,7 +59,7 @@ export default function RootLayout() {
           }}
         />
         <Drawer.Screen
-          name="faq"
+          name="(menu)/faq"
           options={{
             drawerLabel: 'よくある質問',
             title: 'よくある質問',
@@ -67,7 +67,7 @@ export default function RootLayout() {
           }}
         />
         <Drawer.Screen
-          name="contact"
+          name="(menu)/contact"
           options={{
             drawerLabel: 'お問い合わせ',
             title: 'お問い合わせ',
@@ -75,7 +75,7 @@ export default function RootLayout() {
           }}
         />
         <Drawer.Screen
-          name="privacy"
+          name="(menu)/privacy"
           options={{
             drawerLabel: 'プライバシーポリシー',
             title: 'プライバシーポリシー',
@@ -83,7 +83,7 @@ export default function RootLayout() {
           }}
         />
         <Drawer.Screen
-          name="terms"
+          name="(menu)/terms"
           options={{
             drawerLabel: '利用規約',
             title: '利用規約',
