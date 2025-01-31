@@ -1,3 +1,4 @@
+import React from 'react';
 import { Drawer } from 'expo-router/drawer';
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
