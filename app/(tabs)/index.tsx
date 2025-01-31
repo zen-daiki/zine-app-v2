@@ -1,13 +1,13 @@
-import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as MediaLibrary from 'expo-media-library';
 import { type ImageSource } from "expo-image";
 import { captureRef } from 'react-native-view-shot';
 import domtoimage from 'dom-to-image';
 import { router } from 'expo-router';
+import { addBook, getTableInfo, getAllBooks } from '@/libs/sqlite';
 
 import Button from '@/components/Button';
 import ImageViewer from '@/components/ImageViewer';
@@ -58,8 +58,31 @@ export default function Index() {
     setIsModalVisible(false);
   };
 
-  const handleCreateNew = () => {
-    router.push('/(edit)/chooseBook');
+  const handleCreateNew = async () => {
+    try {
+      const newBook = {
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        title: "新しいジン",
+        booktype: "zine",
+        color: "#FFFFFF",
+        page_count: 1,
+        status: "draft",
+        content: JSON.stringify({
+          pages: [
+            {
+              background: selectedImage,
+              stickers: pickedEmoji ? [{ image: pickedEmoji, position: { x: 0, y: 0 } }] : []
+            }
+          ]
+        })
+      };
+
+      await addBook(newBook);
+      router.push('/(edit)/chooseBook');
+    } catch (error) {
+      console.error('Failed to create new book:', error);
+    }
   };
 
   const onSaveImageAsync = async () => {
@@ -94,6 +117,24 @@ export default function Index() {
       }
     }
   };
+
+  const checkDatabase = async () => {
+    try {
+      console.log('=== テーブル情報 ===');
+      const tableInfo = await getTableInfo();
+      console.log(JSON.stringify(tableInfo, null, 2));
+
+      console.log('\n=== 登録されているデータ ===');
+      const books = await getAllBooks();
+      console.log(JSON.stringify(books, null, 2));
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  useEffect(() => {
+    checkDatabase();
+  }, []);
 
   return (
     <GestureHandlerRootView style={styles.container}>
