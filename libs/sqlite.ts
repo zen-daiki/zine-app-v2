@@ -64,6 +64,14 @@ export async function getBooks(): Promise<Book[]> {
   return books;
 }
 
+export async function getAllBooks(): Promise<Book[]> {
+  const result = await db.execAsync('SELECT * FROM books');
+  return ((result as any)?.rows ?? []).map((row: any) => ({
+    ...row,
+    content: JSON.parse(row.content)
+  }));
+}
+
 export async function updateBook(book: Book): Promise<void> {
   if (!book.id) {
     throw new Error('Book ID is required for update');
@@ -85,4 +93,12 @@ export async function updateBook(book: Book): Promise<void> {
 
 export async function deleteBook(id: number): Promise<void> {
   await db.execAsync(`DELETE FROM books WHERE id = ${id}`);
+}
+
+export async function getTableInfo(): Promise<any[]> {
+  const result = await db.execAsync(`
+    SELECT * FROM sqlite_master 
+    WHERE type='table' AND name='books';
+  `) as any;
+  return result[0].rows;
 }
