@@ -5,8 +5,6 @@ import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
-import { initDatabase } from "@/libs/sqlite";
-import { useEffect } from "react";
 
 type DrawerParamList = {
   "(tabs)": undefined;
@@ -20,17 +18,6 @@ type NavigationType = DrawerNavigationProp<DrawerParamList>;
 
 export default function RootLayout() {
   const navigation = useNavigation<NavigationType>();
-
-  useEffect(() => {
-    async function initialize() {
-      try {
-        await initDatabase();
-      } catch (error) {
-        console.error("Failed to initialize database:", error);
-      }
-    }
-    initialize();
-  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

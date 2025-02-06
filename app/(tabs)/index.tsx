@@ -1,14 +1,12 @@
-import { View, StyleSheet, Platform } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { useState, useRef, useEffect } from 'react';
+import { StyleSheet, View, Platform, Image } from 'react-native';
+import { useState, useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
-import { type ImageSource } from "expo-image";
 import { captureRef } from 'react-native-view-shot';
 import domtoimage from 'dom-to-image';
 import { router } from 'expo-router';
-import { addBook, getTableInfo, getAllBooks } from '@/libs/sqlite';
-
+import { type ImageSource } from 'expo-image';
 import Button from '@/components/Button';
 import ImageViewer from '@/components/ImageViewer';
 import IconButton from '@/components/IconButton';
@@ -19,13 +17,17 @@ import EmojiSticker from '@/components/EmojiSticker';
 
 const PlaceholderImage = require('@/assets/images/background-image.png');
 
+interface EmojiType {
+  uri: string;
+}
+
 export default function Index() {
-  const [selectedImage, setSelectedImage] = useState<string | undefined>(undefined);
-  const [showAppOptions, setShowAppOptions] = useState<boolean>(false);
-  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
-  const [pickedEmoji, setPickedEmoji] = useState<ImageSource | undefined>(undefined);
+  const imageRef = useRef<View | null>(null);
   const [status, requestPermission] = MediaLibrary.usePermissions();
-  const imageRef = useRef<View>(null);
+  const [selectedImage, setSelectedImage] = useState<ImageSource | null>(null);
+  const [showAppOptions, setShowAppOptions] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [pickedEmoji, setPickedEmoji] = useState<ImageSource | null>(null);
 
   if (status === null) {
     requestPermission();
@@ -33,21 +35,22 @@ export default function Index() {
 
   const pickImageAsync = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 1,
     });
 
     if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
+      setSelectedImage({ uri: result.assets[0].uri });
       setShowAppOptions(true);
     } else {
-      alert('You did not select any image.');
+      alert('画像が選択されませんでした。');
     }
   };
 
   const onReset = () => {
     setShowAppOptions(false);
+    setSelectedImage(null);
+    setPickedEmoji(null);
   };
 
   const onAddSticker = () => {
@@ -58,34 +61,13 @@ export default function Index() {
     setIsModalVisible(false);
   };
 
-  const handleCreateNew = async () => {
-    try {
-      const newBook = {
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        title: "新しいジン",
-        booktype: "zine",
-        color: "#FFFFFF",
-        page_count: 1,
-        status: "draft",
-        content: JSON.stringify({
-          pages: [
-            {
-              background: selectedImage,
-              stickers: pickedEmoji ? [{ image: pickedEmoji, position: { x: 0, y: 0 } }] : []
-            }
-          ]
-        })
-      };
-
-      await addBook(newBook);
-      router.push('/(edit)/chooseBook');
-    } catch (error) {
-      console.error('Failed to create new book:', error);
-    }
+  const handleCreateNew = () => {
+    router.push('/(edit)/chooseBook');
   };
 
   const onSaveImageAsync = async () => {
+    if (!imageRef.current) return;
+
     if (Platform.OS !== 'web') {
       try {
         const localUri = await captureRef(imageRef, {
@@ -95,10 +77,11 @@ export default function Index() {
 
         await MediaLibrary.saveToLibraryAsync(localUri);
         if (localUri) {
-          alert('Saved!');
+          alert('保存しました！');
         }
       } catch (e) {
-        console.log(e);
+        console.error('画像の保存に失敗しました:', e);
+        alert('画像の保存に失敗しました。');
       }
     } else {
       try {
@@ -108,59 +91,49 @@ export default function Index() {
           height: 440,
         });
 
-        let link = document.createElement('a');
+        const link = document.createElement('a');
         link.download = 'sticker-smash.jpeg';
         link.href = dataUrl;
         link.click();
       } catch (e) {
-        console.log(e);
+        console.error('画像の保存に失敗しました:', e);
+        alert('画像の保存に失敗しました。');
       }
     }
   };
-
-  const checkDatabase = async () => {
-    try {
-      console.log('=== テーブル情報 ===');
-      const tableInfo = await getTableInfo();
-      console.log(JSON.stringify(tableInfo, null, 2));
-
-      console.log('\n=== 登録されているデータ ===');
-      const books = await getAllBooks();
-      console.log(JSON.stringify(books, null, 2));
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
-  useEffect(() => {
-    checkDatabase();
-  }, []);
 
   return (
     <GestureHandlerRootView style={styles.container}>
       <View style={styles.imageContainer}>
         <View ref={imageRef} collapsable={false}>
-          <ImageViewer imgSource={PlaceholderImage} selectedImage={selectedImage} />
-          {pickedEmoji && <EmojiSticker imageSize={40} stickerSource={pickedEmoji} />}
+          <ImageViewer 
+            imgSource={PlaceholderImage} 
+            selectedImage={selectedImage?.uri} 
+          />
+          {pickedEmoji && (
+            <EmojiSticker 
+              imageSize={40} 
+              stickerSource={pickedEmoji} 
+            />
+          )}
         </View>
       </View>
       {showAppOptions ? (
         <View style={styles.optionsContainer}>
           <View style={styles.optionsRow}>
-            <IconButton icon="refresh" label="Reset" onPress={onReset} />
+            <IconButton icon="refresh" label="リセット" onPress={onReset} />
             <CircleButton onPress={onAddSticker} />
-            <IconButton icon="save-alt" label="Save" onPress={onSaveImageAsync} />
+            <IconButton icon="save-alt" label="保存" onPress={onSaveImageAsync} />
           </View>
         </View>
       ) : (
         <View style={styles.footerContainer}>
           <Button theme="primary" label="新しく作成する" onPress={handleCreateNew} />
           <Button label="写真を選択する" onPress={pickImageAsync} />
-          {/* <Button label="この写真を使用する" onPress={() => setShowAppOptions(true)} /> */}
         </View>
       )}
       <EmojiPicker isVisible={isModalVisible} onClose={onModalClose}>
-        <EmojiList onSelect={setPickedEmoji} onCloseModal={onModalClose} />
+        <EmojiList onSelect={(emoji: ImageSource) => setPickedEmoji(emoji)} onCloseModal={onModalClose} />
       </EmojiPicker>
     </GestureHandlerRootView>
   );
@@ -170,10 +143,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#25292e',
-    alignItems: 'center',
   },
   imageContainer: {
     flex: 1,
+    paddingTop: 58,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   footerContainer: {
     flex: 1 / 3,
@@ -182,6 +157,9 @@ const styles = StyleSheet.create({
   optionsContainer: {
     position: 'absolute',
     bottom: 80,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   optionsRow: {
     alignItems: 'center',
