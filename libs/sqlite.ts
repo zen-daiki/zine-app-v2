@@ -1,4 +1,4 @@
-import * as SQLite from 'expo-sqlite';
+import * as SQLite from "expo-sqlite";
 
 export type Book = {
   id?: number;
@@ -12,7 +12,7 @@ export type Book = {
   content: string; // JSON文字列として保存
 };
 
-const db = SQLite.openDatabaseSync('zine_book.db');
+const db = SQLite.openDatabaseSync("zine_book.db");
 
 export async function initDatabase(): Promise<void> {
   await db.execAsync(`
@@ -30,7 +30,7 @@ export async function initDatabase(): Promise<void> {
   `);
 }
 
-export async function addBook(book: Omit<Book, 'id'>): Promise<void> {
+export async function addBook(book: Omit<Book, "id">): Promise<void> {
   const now = new Date().toISOString();
   await db.execAsync(`
     INSERT INTO books (
@@ -56,25 +56,27 @@ export async function addBook(book: Omit<Book, 'id'>): Promise<void> {
 }
 
 export async function getBooks(): Promise<Book[]> {
-  const result = await db.execAsync('SELECT * FROM books ORDER BY created_at DESC');
+  const result = await db.execAsync(
+    "SELECT * FROM books ORDER BY created_at DESC"
+  );
   const books = ((result as any)?.rows ?? []).map((row: any) => ({
     ...row,
-    content: JSON.parse(row.content)
+    content: JSON.parse(row.content),
   }));
   return books;
 }
 
 export async function getAllBooks(): Promise<Book[]> {
-  const result = await db.execAsync('SELECT * FROM books');
+  const result = await db.execAsync("SELECT * FROM books");
   return ((result as any)?.rows ?? []).map((row: any) => ({
     ...row,
-    content: JSON.parse(row.content)
+    content: JSON.parse(row.content),
   }));
 }
 
 export async function updateBook(book: Book): Promise<void> {
   if (!book.id) {
-    throw new Error('Book ID is required for update');
+    throw new Error("Book ID is required for update");
   }
 
   const now = new Date().toISOString();
@@ -96,9 +98,9 @@ export async function deleteBook(id: number): Promise<void> {
 }
 
 export async function getTableInfo(): Promise<any[]> {
-  const result = await db.execAsync(`
+  const result = (await db.execAsync(`
     SELECT * FROM sqlite_master 
     WHERE type='table' AND name='books';
-  `) as any;
+  `)) as any;
   return result[0].rows;
 }
