@@ -14,7 +14,6 @@ type DrawerParamList = {
   "(menu)/contact": undefined;
   "(menu)/privacy": undefined;
   "(menu)/terms": undefined;
-  "(menu)/database-check": undefined;
 };
 
 type NavigationType = DrawerNavigationProp<DrawerParamList>;
@@ -103,14 +102,6 @@ export default function RootLayout() {
           options={{
             drawerLabel: "利用規約",
             title: "利用規約",
-            drawerItemStyle: { display: "flex" },
-          }}
-        />
-        <Drawer.Screen
-          name="(menu)/database-check"
-          options={{
-            drawerLabel: "DB確認",
-            title: "DB確認",
             drawerItemStyle: { display: "flex" },
           }}
         />
