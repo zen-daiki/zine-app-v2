@@ -10,7 +10,6 @@ type DrawerParamList = {
   "(tabs)": undefined;
   "(menu)/faq": undefined;
   "(menu)/contact": undefined;
-  "(menu)/privacy": undefined;
   "(menu)/terms": undefined;
   "(menu)/async-storage-view": undefined;
 };
@@ -78,14 +77,6 @@ export default function RootLayout() {
           }}
         />
         <Drawer.Screen
-          name="(menu)/privacy"
-          options={{
-            drawerLabel: "プライバシーポリシー",
-            title: "プライバシーポリシー",
-            drawerItemStyle: { display: "flex" },
-          }}
-        />
-        <Drawer.Screen
           name="(menu)/terms"
           options={{
             drawerLabel: "利用規約",
@@ -96,8 +87,8 @@ export default function RootLayout() {
         <Drawer.Screen
           name="(menu)/async-storage-view"
           options={{
-            drawerLabel: "保存済み画像",
-            title: "保存済み画像",
+            drawerLabel: "【確認用】AsyncStorage",
+            title: "【確認用】AsyncStorage",
             drawerItemStyle: { display: "flex" },
           }}
         />
