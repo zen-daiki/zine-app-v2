@@ -12,6 +12,7 @@ type DrawerParamList = {
   "(menu)/contact": undefined;
   "(menu)/privacy": undefined;
   "(menu)/terms": undefined;
+  "(menu)/async-storage-view": undefined;
 };
 
 type NavigationType = DrawerNavigationProp<DrawerParamList>;
@@ -89,6 +90,14 @@ export default function RootLayout() {
           options={{
             drawerLabel: "利用規約",
             title: "利用規約",
+            drawerItemStyle: { display: "flex" },
+          }}
+        />
+        <Drawer.Screen
+          name="(menu)/async-storage-view"
+          options={{
+            drawerLabel: "保存済み画像",
+            title: "保存済み画像",
             drawerItemStyle: { display: "flex" },
           }}
         />

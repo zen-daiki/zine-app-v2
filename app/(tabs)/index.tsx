@@ -1,4 +1,4 @@
-import { StyleSheet, View, Platform, Image } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import { useState, useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
@@ -6,7 +6,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { captureRef } from 'react-native-view-shot';
 import domtoimage from 'dom-to-image';
 import { router } from 'expo-router';
-import { type ImageSource } from 'expo-image';
+import { Image, type ImageSource } from 'expo-image';
 import Button from '@/components/Button';
 import ImageViewer from '@/components/ImageViewer';
 import IconButton from '@/components/IconButton';
@@ -14,12 +14,9 @@ import CircleButton from '@/components/CircleButton';
 import EmojiPicker from '@/components/EmojiPicker';
 import EmojiList from '@/components/EmojiList';
 import EmojiSticker from '@/components/EmojiSticker';
+import { saveImage } from '@/libs/storage';
 
 const PlaceholderImage = require('@/assets/images/background-image.png');
-
-interface EmojiType {
-  uri: string;
-}
 
 export default function Index() {
   const imageRef = useRef<View | null>(null);
@@ -75,9 +72,13 @@ export default function Index() {
           quality: 1,
         });
 
-        await MediaLibrary.saveToLibraryAsync(localUri);
         if (localUri) {
+          await saveImage({
+            imageUri: localUri,
+          });
+          await MediaLibrary.saveToLibraryAsync(localUri);
           alert('保存しました！');
+          onReset();
         }
       } catch (e) {
         console.error('画像の保存に失敗しました:', e);
@@ -91,10 +92,16 @@ export default function Index() {
           height: 440,
         });
 
+        await saveImage({
+          imageUri: dataUrl,
+        });
+
         const link = document.createElement('a');
         link.download = 'sticker-smash.jpeg';
         link.href = dataUrl;
         link.click();
+        alert('保存しました！');
+        onReset();
       } catch (e) {
         console.error('画像の保存に失敗しました:', e);
         alert('画像の保存に失敗しました。');
