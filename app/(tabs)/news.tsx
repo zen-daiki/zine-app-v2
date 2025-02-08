@@ -1,4 +1,3 @@
-
 import { Text, View, StyleSheet, FlatList } from 'react-native';
 import { useMicroCMS } from '../../hooks/useMicroCMS';
 import type { BlogsType } from '../../libs/microcms';

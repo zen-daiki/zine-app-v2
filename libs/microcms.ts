@@ -15,6 +15,13 @@ export type BlogsType = {
   category: CategoryType;
 } & MicroCMSDate;
 
+export type FaqType = {
+  id: string;
+  question: string;
+  answer: string;
+} & MicroCMSDate;
+
+
 export type CategoryType = {
   id: string;
   name: string;
