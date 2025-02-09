@@ -5,13 +5,14 @@ import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
+import { MaterialIcons } from "@expo/vector-icons";
 
 type DrawerParamList = {
   "(tabs)": undefined;
   "(menu)/faq": undefined;
   "(menu)/contact": undefined;
   "(menu)/terms": undefined;
-  "(menu)/async-storage-view": undefined;
+  "(menu)/check-storage": undefined;
 };
 
 type NavigationType = DrawerNavigationProp<DrawerParamList>;
@@ -85,11 +86,12 @@ export default function RootLayout() {
           }}
         />
         <Drawer.Screen
-          name="(menu)/async-storage-view"
+          name="(menu)/check-storage"
           options={{
-            drawerLabel: "【確認用】AsyncStorage",
-            title: "【確認用】AsyncStorage",
-            drawerItemStyle: { display: "flex" },
+            title: 'ストレージの確認',
+            drawerIcon: ({ size, color }) => (
+              <MaterialIcons name="storage" size={size} color={color} />
+            ),
           }}
         />
       </Drawer>
