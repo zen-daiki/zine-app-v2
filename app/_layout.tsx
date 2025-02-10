@@ -88,10 +88,9 @@ export default function RootLayout() {
         <Drawer.Screen
           name="(menu)/check-storage"
           options={{
-            title: 'ストレージの確認',
-            drawerIcon: ({ size, color }) => (
-              <MaterialIcons name="storage" size={size} color={color} />
-            ),
+            drawerLabel: "ストレージの確認",
+            title: "ストレージの確認",
+            drawerItemStyle: { display: "flex" },
           }}
         />
       </Drawer>
