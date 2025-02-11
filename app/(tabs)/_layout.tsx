@@ -24,7 +24,7 @@ export default function TabLayout() {
       unfocusedIcon: "newspaper-outline"
     },
     {
-      name: "about",
+      name: "editing",
       title: "編集中データ",
       focusedIcon: "information-circle",
       unfocusedIcon: "information-circle-outline"
