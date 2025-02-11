@@ -1,8 +1,9 @@
-import { Text, View, StyleSheet, FlatList } from 'react-native';
+import { Text, View, StyleSheet, FlatList, Button } from 'react-native';
 import { useMicroCMS } from '../../hooks/useMicroCMS';
 import type { BlogsType } from '../../libs/microcms';
 import { Loading } from '../../components/Loading';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { Stack } from 'expo-router';
 
 export default function NewsScreen() {
   const { data: blogs, loading, error } = useMicroCMS<BlogsType>('blogs');
@@ -17,6 +18,11 @@ export default function NewsScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen
+        options={{
+          title: 'お知らせ',
+        }}
+      />
       <FlatList
         data={blogs}
         renderItem={({ item }) => (

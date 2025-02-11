@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import { captureRef } from 'react-native-view-shot';
 import domtoimage from 'dom-to-image';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { Image } from 'expo-image';
 import Button from '@/components/Button';
 import ImageViewer from '@/components/ImageViewer';
@@ -133,6 +133,11 @@ export default function Index() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
+      <Stack.Screen
+        options={{
+          title: 'ホーム',
+        }}
+      />
       <View style={styles.imageContainer}>
         {showAppOptions ? (
           <View ref={imageRef} collapsable={false}>
