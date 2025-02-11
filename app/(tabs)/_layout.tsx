@@ -1,8 +1,42 @@
-
+import { ComponentProps } from 'react';
 import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+type TabScreen = {
+  name: string;
+  title: string;
+  focusedIcon: ComponentProps<typeof Ionicons>['name'];
+  unfocusedIcon: ComponentProps<typeof Ionicons>['name'];
+};
+
 export default function TabLayout() {
+  const tabScreens: TabScreen[] = [
+    {
+      name: "index",
+      title: "ホーム",
+      focusedIcon: "home-sharp",
+      unfocusedIcon: "home-outline"
+    },
+    {
+      name: "news",
+      title: "お知らせ",
+      focusedIcon: "newspaper",
+      unfocusedIcon: "newspaper-outline"
+    },
+    {
+      name: "about",
+      title: "編集中データ",
+      focusedIcon: "information-circle",
+      unfocusedIcon: "information-circle-outline"
+    },
+    {
+      name: "order",
+      title: "注文履歴",
+      focusedIcon: "cart",
+      unfocusedIcon: "cart-outline"
+    }
+  ];
+
   return (
     <Tabs
       screenOptions={{
@@ -13,50 +47,27 @@ export default function TabLayout() {
         headerShadowVisible: false,
         headerTintColor: '#fff',
         tabBarStyle: {
-        backgroundColor: '#25292e',
+          backgroundColor: '#25292e',
         },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          headerShown: false,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'home-sharp' : 'home-outline'} color={color} size={24} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="news"
-        options={{
-          title: 'News',
-          headerShown: false,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'newspaper' : 'newspaper-outline'} color={color} size={24}/>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="about"
-        options={{
-          title: 'About',
-          headerShown: false,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'information-circle' : 'information-circle-outline'} color={color} size={24}/>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="order"
-        options={{
-          title: 'Order',
-          headerShown: false,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'cart' : 'cart-outline'} color={color} size={24}/>
-          ),
-        }}
-      />
+      {tabScreens.map((screen) => (
+        <Tabs.Screen
+          key={screen.name}
+          name={screen.name}
+          options={{
+            title: screen.title,
+            headerShown: false,
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? screen.focusedIcon : screen.unfocusedIcon}
+                color={color}
+                size={24}
+              />
+            ),
+          }}
+        />
+      ))}
     </Tabs>
   );
 }
