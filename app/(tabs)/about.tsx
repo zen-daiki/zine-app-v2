@@ -51,7 +51,7 @@ export default function EditingScreen() {
     >
       <Stack.Screen
         options={{
-          title: '編集',
+          title: '編集中データ',
           headerRight: () => (
             <Button
               mode="contained-tonal"
