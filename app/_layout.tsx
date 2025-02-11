@@ -20,8 +20,32 @@ type NavigationType = DrawerNavigationProp<DrawerParamList>;
 export default function RootLayout() {
   const navigation = useNavigation<NavigationType>();
 
+  const menuScreens = [
+    {
+      name: "(menu)/faq",
+      label: "よくある質問",
+      title: "よくある質問"
+    },
+    {
+      name: "(menu)/contact",
+      label: "お問い合わせ",
+      title: "お問い合わせ"
+    },
+    {
+      name: "(menu)/terms",
+      label: "利用規約",
+      title: "利用規約"
+    },
+    {
+      name: "(menu)/check-storage",
+      label: "【確認】Storage",
+      title: "【確認】Storage"
+    }
+  ];
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <StatusBar style="auto" />
       <Drawer
         screenOptions={{
           headerTintColor: "#333",
@@ -31,7 +55,7 @@ export default function RootLayout() {
           headerTitle: "ZINE",
           headerTitleAlign: "center",
           headerShown: true,
-          drawerPosition: "left",
+          drawerPosition: "right",
           drawerType: "front",
           drawerStyle: {
             width: "70%",
@@ -41,60 +65,47 @@ export default function RootLayout() {
           drawerActiveTintColor: "#333",
           drawerInactiveTintColor: "#666",
           drawerItemStyle: { display: "none" },
+          headerLeft: () => null,
+          headerRight: () => (
+            <Pressable
+              onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ marginRight: 16, padding: 8 }}
+            >
+              <Ionicons name="menu" size={24} color="#333" />
+            </Pressable>
+          ),
         }}
       >
         <Drawer.Screen
           name="(tabs)"
           options={{
             drawerLabel: "ホーム",
-            drawerItemStyle: { display: "flex" },
-            headerLeft: () => (
-              <Pressable
-                onPress={() =>
-                  navigation.dispatch(DrawerActions.toggleDrawer())
-                }
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={{ marginLeft: 16, padding: 8 }}
-              >
-                <Ionicons name="menu" size={24} color="#333" />
-              </Pressable>
-            ),
-          }}
-        />
-        <Drawer.Screen
-          name="(menu)/faq"
-          options={{
-            drawerLabel: "よくある質問",
-            title: "よくある質問",
+            title: "ホーム",
             drawerItemStyle: { display: "flex" },
           }}
         />
-        <Drawer.Screen
-          name="(menu)/contact"
-          options={{
-            drawerLabel: "お問い合わせ",
-            title: "お問い合わせ",
-            drawerItemStyle: { display: "flex" },
-          }}
-        />
-        <Drawer.Screen
-          name="(menu)/terms"
-          options={{
-            drawerLabel: "利用規約",
-            title: "利用規約",
-            drawerItemStyle: { display: "flex" },
-          }}
-        />
-        <Drawer.Screen
-          name="(menu)/check-storage"
-          options={{
-            drawerLabel: "ストレージの確認",
-            title: "ストレージの確認",
-            drawerItemStyle: { display: "flex" },
-          }}
-        />
+        {menuScreens.map((screen) => (
+          <Drawer.Screen
+            key={screen.name}
+            name={screen.name}
+            options={{
+              drawerLabel: screen.label,
+              title: screen.title,
+              drawerItemStyle: { display: "flex" },
+              headerLeft: () => (
+                <Pressable
+                  onPress={() => navigation.goBack()}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={{ marginLeft: 16, padding: 8 }}
+                >
+                  <Ionicons name="arrow-back" size={24} color="#333" />
+                </Pressable>
+              )
+            }}
+          />
+        ))}
       </Drawer>
-      <StatusBar style="dark" />
     </GestureHandlerRootView>
   );
 }
