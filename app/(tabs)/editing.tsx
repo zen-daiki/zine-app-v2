@@ -1,106 +1,122 @@
-import { useState, useCallback, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, RefreshControl } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import { useEffect, useState } from 'react';
+import { StyleSheet, View, FlatList, Pressable, Alert, Text } from 'react-native';
+import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Stack } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+
+const STORAGE_KEY = '@saved_images';
+
+type SavedImage = {
+  id: string;
+  imageUri: string;
+  emoji?: any;
+  createdAt: string;
+};
 
 export default function EditingScreen() {
-  const [storageData, setStorageData] = useState<{ [key: string]: string }>({});
-  const [refreshing, setRefreshing] = useState(false);
+  const [savedImages, setSavedImages] = useState<SavedImage[]>([]);
 
-  const getAllStorageData = async () => {
+  const loadSavedImages = async () => {
     try {
-      const keys = await AsyncStorage.getAllKeys();
-      const items = await AsyncStorage.multiGet(keys);
-      const data: { [key: string]: string } = {};
-      items.forEach(([key, value]) => {
-        data[key] = value || '';
-      });
-      setStorageData(data);
+      const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
+      const data = jsonValue ? JSON.parse(jsonValue) : [];
+      setSavedImages(data.sort((a: SavedImage, b: SavedImage) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ));
     } catch (error) {
-      console.error('Error getting storage data:', error);
+      console.error('Error loading saved images:', error);
     }
   };
-
-  const clearAllStorageData = async () => {
-    try {
-      await AsyncStorage.clear();
-      setStorageData({});
-    } catch (error) {
-      console.error('Error clearing storage:', error);
-    }
-  };
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await getAllStorageData();
-    setRefreshing(false);
-  }, []);
 
   useEffect(() => {
-    getAllStorageData();
+    loadSavedImages();
   }, []);
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    Alert.alert(
+      '画像の削除',
+      'この画像を削除してもよろしいですか？',
+      [
+        {
+          text: 'キャンセル',
+          style: 'cancel',
+        },
+        {
+          text: '削除',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
+              if (jsonValue) {
+                const data = JSON.parse(jsonValue);
+                const filteredData = data.filter((item: SavedImage) => item.id !== id);
+                await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filteredData));
+                setSavedImages(filteredData.sort((a: SavedImage, b: SavedImage) => 
+                  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                ));
+              }
+            } catch (error) {
+              console.error('Error deleting image:', error);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      <Stack.Screen
-        options={{
-          title: '編集中データ',
-          headerRight: () => (
-            <Button
-              mode="contained-tonal"
-              onPress={clearAllStorageData}
-              style={styles.clearButton}
-            >
-              クリア
-            </Button>
-          ),
-        }}
-      />
-      <View style={styles.content}>
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <MaterialIcons name="storage" size={24} color="#666" />
-            <Text variant="titleLarge" style={styles.sectionTitle}>
-              ストレージの状態
+    <View style={styles.container}>
+      <FlatList
+        data={savedImages}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.itemContainer}>
+            <View style={styles.imageContainer}>
+              <Image
+                source={{ uri: item.imageUri }}
+                style={styles.image}
+                contentFit="cover"
+                transition={200}
+              />
+              {item.emoji && (
+                <Image
+                  source={item.emoji}
+                  style={styles.emoji}
+                  contentFit="contain"
+                  transition={200}
+                />
+              )}
+            </View>
+            <View style={styles.textContainer}>
+              <Text style={styles.dateText}>
+                {formatDate(item.createdAt)}
+              </Text>
+              <Pressable style={styles.deleteButton} onPress={() => handleDelete(item.id)}>
+                <Text style={styles.deleteButtonText}>削除</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+        contentContainerStyle={styles.list}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              保存された画像はありません
             </Text>
           </View>
-          {Object.entries(storageData).length > 0 ? (
-            Object.entries(storageData).map(([key, value]) => {
-              // JSONとして解析可能な場合は整形して表示
-              let formattedValue = value;
-              try {
-                const parsedValue = JSON.parse(value);
-                formattedValue = JSON.stringify(parsedValue, null, 2);
-              } catch {
-                // JSON解析に失敗した場合は元の値をそのまま使用
-              }
-
-              return (
-                <View key={key} style={styles.storageItem}>
-                  <Text variant="titleMedium" style={styles.storageKey}>
-                    {key}
-                  </Text>
-                  <Text variant="bodyMedium" style={[styles.storageValue, styles.preformatted]}>
-                    {formattedValue}
-                  </Text>
-                </View>
-              );
-            })
-          ) : (
-            <Text variant="bodyMedium" style={styles.emptyMessage}>
-              ストレージは空です
-            </Text>
-          )}
-        </View>
-      </View>
-    </ScrollView>
+        }
+      />
+    </View>
   );
 }
 
@@ -109,54 +125,62 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#25292e',
   },
-  content: {
-    padding: 16,
+  list: {
+    padding: 4,
   },
-  section: {
-    backgroundColor: '#2d3238',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-  },
-  sectionHeader: {
+  itemContainer: {
+    flex: 1,
+    margin: 4,
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    color: '#fff',
-    marginLeft: 8,
-  },
-  description: {
-    color: '#ddd',
-    lineHeight: 24,
-  },
-  clearButton: {
-    marginRight: 8,
-  },
-  storageItem: {
-    backgroundColor: '#363b42',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-  },
-  storageKey: {
-    color: '#fff',
-    marginBottom: 4,
-  },
-  storageValue: {
-    color: '#ddd',
-    fontFamily: 'monospace',
-  },
-  preformatted: {
-    marginTop: 8,
+    backgroundColor: '#2d3238',
+    borderRadius: 10,
     padding: 8,
-    backgroundColor: '#1a1d20',
+  },
+  imageContainer: {
+    width: 80,
+    aspectRatio: 320/440,
+    borderRadius: 6,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  emoji: {
+    position: 'absolute',
+    width: '30%',
+    height: '30%',
+    top: '35%',
+    left: '35%',
+  },
+  textContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  dateText: {
+    color: '#fff',
+    fontSize: 12,
+  },
+  deleteButton: {
+    backgroundColor: '#ff0000',
+    padding: 8,
     borderRadius: 4,
   },
-  emptyMessage: {
-    color: '#ddd',
+  deleteButtonText: {
+    color: '#fff',
+    fontSize: 12,
     textAlign: 'center',
-    fontStyle: 'italic',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
