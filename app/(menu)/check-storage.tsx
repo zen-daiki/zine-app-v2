@@ -1,165 +1,126 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, View, FlatList, Pressable, Alert, Text } from 'react-native';
-import { Image } from 'expo-image';
+import { useState, useCallback, useEffect } from 'react';
+import { StyleSheet, View, ScrollView, RefreshControl } from 'react-native';
+import { Text, Button } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSavedImages, deleteImage, deleteAllImages, type SavedImage } from '@/libs/storage';
+import { MaterialIcons } from '@expo/vector-icons';
+
+const STORAGE_KEY = '@saved_images';
 
 const TEST_IMAGES = [
   {
+    id: '1',
     imageUri: 'https://picsum.photos/320/440?random=1',
-    emoji: require('@/assets/images/emoji1.png'),
-  },
-  {
-    imageUri: 'https://picsum.photos/320/440?random=2',
     emoji: require('@/assets/images/emoji2.png'),
+    createdAt: new Date().toISOString(),
   },
 ];
 
 export default function AsyncStorageViewScreen() {
-  const [savedImages, setSavedImages] = useState<SavedImage[]>([]);
+  const [storageData, setStorageData] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadSavedImages = async () => {
-    const images = await getSavedImages();
-    setSavedImages(images.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    ));
+  const getAllStorageData = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
+      const data = jsonValue ? JSON.parse(jsonValue) : [];
+      setStorageData(data);
+    } catch (error) {
+      console.error('Error getting storage data:', error);
+    }
   };
 
-  useEffect(() => {
-    loadSavedImages();
-  }, []);
-
-  const handleDelete = (id: string) => {
-    Alert.alert(
-      '画像の削除',
-      'この画像を削除してもよろしいですか？',
-      [
-        {
-          text: 'キャンセル',
-          style: 'cancel',
-        },
-        {
-          text: '削除',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteImage(id);
-            await loadSavedImages();
-          },
-        },
-      ],
-    );
+  const clearAllStorageData = async () => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+      setStorageData([]);
+    } catch (error) {
+      console.error('Error clearing storage:', error);
+    }
   };
 
   const handleAddTestData = async () => {
     try {
-      const existingData = await getSavedImages();
-      const newData = TEST_IMAGES.map((item, index) => ({
-        id: `test-${Date.now()}-${index}`,
-        imageUri: item.imageUri,
-        emoji: item.emoji,
-        createdAt: new Date(Date.now() - index * 60000).toISOString(), // 1分ずつ時間をずらす
-      }));
+      // 既存のデータを取得
+      const existingData = storageData;
       
-      await AsyncStorage.setItem('saved_images', JSON.stringify([...existingData, ...newData]));
-      await loadSavedImages();
-      Alert.alert('成功', 'テストデータを追加しました');
+      // 新しいデータを作成（IDは既存データの最後のID + 1）
+      const lastId = existingData.length > 0 
+        ? Math.max(...existingData.map(item => parseInt(item.id))) 
+        : 0;
+
+      const newData = TEST_IMAGES.map((item, index) => ({
+        ...item,
+        id: (lastId + index + 1).toString(),
+        createdAt: new Date().toISOString(),
+      }));
+
+      // 既存のデータと新しいデータを結合
+      const updatedData = [...existingData, ...newData];
+      
+      // 更新したデータを保存
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
+      setStorageData(updatedData);
     } catch (error) {
-      console.error('テストデータの追加に失敗:', error);
-      Alert.alert('エラー', 'テストデータの追加に失敗しました');
+      console.error('Error adding test data:', error);
     }
   };
 
-  const handleDeleteAllData = () => {
-    Alert.alert(
-      '全データ削除',
-      '保存されている全ての画像を削除してもよろしいですか？',
-      [
-        {
-          text: 'キャンセル',
-          style: 'cancel',
-        },
-        {
-          text: '削除',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteAllImages();
-              await loadSavedImages();
-              Alert.alert('成功', '全てのデータを削除しました');
-            } catch (error) {
-              console.error('データの削除に失敗:', error);
-              Alert.alert('エラー', 'データの削除に失敗しました');
-            }
-          },
-        },
-      ],
-    );
-  };
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await getAllStorageData();
+    setRefreshing(false);
+  }, []);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ja-JP', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  useEffect(() => {
+    getAllStorageData();
+  }, []);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.buttonContainer}>
-        <Pressable
-          style={[styles.button, styles.addButton]}
-          onPress={handleAddTestData}
-        >
-          <Text style={styles.buttonText}>テストデータ追加</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.button, styles.deleteButton]}
-          onPress={handleDeleteAllData}
-        >
-          <Text style={styles.buttonText}>全データ削除</Text>
-        </Pressable>
-      </View>
-      {savedImages.length > 0 ? (
-        <FlatList
-          data={savedImages}
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.imageContainer}
-              onLongPress={() => handleDelete(item.id)}
-            >
-              <Image
-                source={{ uri: item.imageUri }}
-                style={styles.image}
-                contentFit="cover"
-              />
-              {item.emoji && (
-                <Image
-                  source={item.emoji}
-                  style={styles.emoji}
-                  contentFit="contain"
-                />
-              )}
-              <Text style={styles.dateText}>
-                {formatDate(item.createdAt)}
-              </Text>
-            </Pressable>
-          )}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          contentContainerStyle={styles.list}
-        />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            保存された画像はありません
-          </Text>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      <View style={styles.content}>
+        <View style={styles.buttonContainer}>
+          <Button
+            mode="contained"
+            onPress={handleAddTestData}
+            style={styles.addButton}
+          >
+            テストデータを追加
+          </Button>
+          <Button
+            mode="contained-tonal"
+            onPress={clearAllStorageData}
+            style={styles.clearButton}
+          >
+            ストレージをクリア
+          </Button>
         </View>
-      )}
-    </View>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="storage" size={24} color="#666" />
+            <Text variant="titleLarge" style={styles.sectionTitle}>
+              ストレージの状態
+            </Text>
+          </View>
+
+          {storageData.length > 0 ? (
+            <View style={styles.storageItem}>
+              <Text variant="bodyMedium" style={[styles.storageValue, styles.preformatted]}>
+                {JSON.stringify(storageData, null, 2)}
+              </Text>
+            </View>
+          ) : (
+            <Text variant="bodyMedium" style={styles.emptyMessage}>
+              ストレージは空です
+            </Text>
+          )}
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -168,64 +129,65 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#25292e',
   },
+  content: {
+    padding: 16,
+  },
+  section: {
+    backgroundColor: '#2d3238',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    color: '#fff',
+    marginLeft: 8,
+  },
+  description: {
+    color: '#ddd',
+    lineHeight: 24,
+  },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 10,
-    backgroundColor: '#2f3437',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 16,
   },
-  button: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    minWidth: 120,
-  },
-  addButton: {
-    backgroundColor: '#4CAF50',
-  },
-  deleteButton: {
+  clearButton: {
+    flex: 1,
     backgroundColor: '#f44336',
   },
-  buttonText: {
-    color: '#ffffff',
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  list: {
-    padding: 10,
-  },
-  imageContainer: {
+  addButton: {
     flex: 1,
-    margin: 5,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: '#2f3437',
+    backgroundColor: '#4CAF50',
   },
-  image: {
-    width: '100%',
-    aspectRatio: 320/440,
+  storageItem: {
+    backgroundColor: '#363b42',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
   },
-  emoji: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    right: 10,
-    bottom: 30,
+  storageKey: {
+    color: '#fff',
+    marginBottom: 4,
   },
-  dateText: {
-    fontSize: 12,
-    color: '#ffffff',
+  storageValue: {
+    color: '#ddd',
+    fontFamily: 'monospace',
+  },
+  preformatted: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#1a1d20',
+    borderRadius: 4,
+  },
+  emptyMessage: {
+    color: '#ddd',
     textAlign: 'center',
-    padding: 5,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#ffffff',
+    fontStyle: 'italic',
   },
 });
