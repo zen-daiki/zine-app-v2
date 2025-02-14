@@ -5,7 +5,6 @@ import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
-import { MaterialIcons } from "@expo/vector-icons";
 
 type DrawerParamList = {
   "(tabs)": undefined;

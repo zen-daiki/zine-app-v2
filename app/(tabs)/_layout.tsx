@@ -26,8 +26,8 @@ export default function TabLayout() {
     {
       name: "editing",
       title: "編集中データ",
-      focusedIcon: "information-circle",
-      unfocusedIcon: "information-circle-outline"
+      focusedIcon: "book",
+      unfocusedIcon: "book-outline"
     },
     {
       name: "order",

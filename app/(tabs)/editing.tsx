@@ -31,7 +31,7 @@ export default function EditingScreen() {
     loadSavedImages();
   }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString('ja-JP', {
       year: 'numeric',
@@ -99,7 +99,7 @@ export default function EditingScreen() {
             </View>
             <View style={styles.textContainer}>
               <Text style={styles.dateText}>
-                {formatDate(item.createdAt)}
+                {formatDateTime(item.createdAt)}
               </Text>
               <Pressable style={styles.deleteButton} onPress={() => handleDelete(item.id)}>
                 <Text style={styles.deleteButtonText}>削除</Text>
