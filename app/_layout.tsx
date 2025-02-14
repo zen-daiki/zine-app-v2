@@ -94,11 +94,11 @@ export default function RootLayout() {
               drawerItemStyle: { display: "flex" },
               headerLeft: () => (
                 <Pressable
-                  onPress={() => navigation.goBack()}
+                  onPress={() => navigation.navigate('(tabs)')}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   style={{ marginLeft: 16, padding: 8 }}
                 >
-                  <Ionicons name="arrow-back" size={24} color="#333" />
+                  <Ionicons name="home" size={24} color="#333" />
                 </Pressable>
               )
             }}
