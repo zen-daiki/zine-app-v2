@@ -10,6 +10,15 @@ export interface SavedImage {
 
 const STORAGE_KEY = 'saved_images';
 
+export const TEST_IMAGES = [
+  {
+    id: '1',
+    imageUri: 'https://picsum.photos/320/440?random=1',
+    emoji: require('@/assets/images/emoji2.png'),
+    createdAt: new Date().toISOString(),
+  },
+];
+
 export const saveImage = async (imageData: Omit<SavedImage, 'id' | 'createdAt'>) => {
   try {
     // 既存のデータを取得
@@ -46,6 +55,16 @@ export const getSavedImages = async (): Promise<SavedImage[]> => {
   }
 };
 
+export const getAllStorageData = async (): Promise<SavedImage[]> => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
+    return jsonValue ? JSON.parse(jsonValue) : [];
+  } catch (error) {
+    console.error('Error getting storage data:', error);
+    return [];
+  }
+};
+
 export const deleteImage = async (id: string) => {
   try {
     const existingData = await getSavedImages();
@@ -62,6 +81,55 @@ export const deleteAllImages = async (): Promise<void> => {
     await AsyncStorage.removeItem(STORAGE_KEY);
   } catch (error) {
     console.error('Failed to delete all images:', error);
+    throw error;
+  }
+};
+
+export const clearAllStorageData = async (): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+  } catch (error) {
+    console.error('Error clearing storage:', error);
+    throw error;
+  }
+};
+
+export const handleAddTestData = async (existingData: SavedImage[]): Promise<SavedImage[]> => {
+  try {
+    const lastId = existingData.length > 0 
+      ? Math.max(...existingData.map(item => parseInt(item.id))) 
+      : 0;
+
+    const newData = TEST_IMAGES.map((item, index) => ({
+      ...item,
+      id: (lastId + index + 1).toString(),
+      createdAt: new Date().toISOString(),
+    }));
+
+    const updatedData = [...existingData, ...newData];
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
+    return updatedData;
+  } catch (error) {
+    console.error('Error adding test data:', error);
+    throw error;
+  }
+};
+
+export const createEmptyImage = async (): Promise<SavedImage> => {
+  try {
+    const existingData = await getSavedImages();
+    
+    const newImage: SavedImage = {
+      id: Date.now().toString(),
+      imageUri: '',
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedData = [...existingData, newImage];
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
+    return newImage;
+  } catch (error) {
+    console.error('新規画像データの作成に失敗しました:', error);
     throw error;
   }
 };

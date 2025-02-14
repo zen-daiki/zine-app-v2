@@ -1,64 +1,33 @@
 import { useState, useCallback, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, RefreshControl } from 'react-native';
 import { Text, Button } from 'react-native-paper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { MaterialIcons } from '@expo/vector-icons';
-
-const STORAGE_KEY = '@saved_images';
-
-const TEST_IMAGES = [
-  {
-    id: '1',
-    imageUri: 'https://picsum.photos/320/440?random=1',
-    emoji: require('@/assets/images/emoji2.png'),
-    createdAt: new Date().toISOString(),
-  },
-];
+import { getAllStorageData, clearAllStorageData, handleAddTestData, type SavedImage } from '@/libs/storage';
 
 export default function AsyncStorageViewScreen() {
-  const [storageData, setStorageData] = useState<any[]>([]);
+  const [storageData, setStorageData] = useState<SavedImage[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const getAllStorageData = async () => {
+  const fetchStorageData = async () => {
     try {
-      const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
-      const data = jsonValue ? JSON.parse(jsonValue) : [];
+      const data = await getAllStorageData();
       setStorageData(data);
     } catch (error) {
       console.error('Error getting storage data:', error);
     }
   };
 
-  const clearAllStorageData = async () => {
+  const handleClearStorage = async () => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+      await clearAllStorageData();
       setStorageData([]);
     } catch (error) {
       console.error('Error clearing storage:', error);
     }
   };
 
-  const handleAddTestData = async () => {
+  const handleTestDataAdd = async () => {
     try {
-      // 既存のデータを取得
-      const existingData = storageData;
-      
-      // 新しいデータを作成（IDは既存データの最後のID + 1）
-      const lastId = existingData.length > 0 
-        ? Math.max(...existingData.map(item => parseInt(item.id))) 
-        : 0;
-
-      const newData = TEST_IMAGES.map((item, index) => ({
-        ...item,
-        id: (lastId + index + 1).toString(),
-        createdAt: new Date().toISOString(),
-      }));
-
-      // 既存のデータと新しいデータを結合
-      const updatedData = [...existingData, ...newData];
-      
-      // 更新したデータを保存
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
+      const updatedData = await handleAddTestData(storageData);
       setStorageData(updatedData);
     } catch (error) {
       console.error('Error adding test data:', error);
@@ -67,12 +36,12 @@ export default function AsyncStorageViewScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await getAllStorageData();
+    await fetchStorageData();
     setRefreshing(false);
   }, []);
 
   useEffect(() => {
-    getAllStorageData();
+    fetchStorageData();
   }, []);
 
   return (
@@ -86,27 +55,20 @@ export default function AsyncStorageViewScreen() {
         <View style={styles.buttonContainer}>
           <Button
             mode="contained"
-            onPress={handleAddTestData}
+            onPress={handleTestDataAdd}
             style={styles.addButton}
           >
             テストデータを追加
           </Button>
           <Button
             mode="contained-tonal"
-            onPress={clearAllStorageData}
+            onPress={handleClearStorage}
             style={styles.clearButton}
           >
             ストレージをクリア
           </Button>
         </View>
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <MaterialIcons name="storage" size={24} color="#666" />
-            <Text variant="titleLarge" style={styles.sectionTitle}>
-              ストレージの状態
-            </Text>
-          </View>
-
           {storageData.length > 0 ? (
             <View style={styles.storageItem}>
               <Text variant="bodyMedium" style={[styles.storageValue, styles.preformatted]}>
@@ -142,10 +104,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
-  },
-  sectionTitle: {
-    color: '#fff',
-    marginLeft: 8,
   },
   description: {
     color: '#ddd',
