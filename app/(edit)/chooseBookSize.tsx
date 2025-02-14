@@ -1,5 +1,6 @@
 import { Text, View, StyleSheet, Image, Pressable, ScrollView } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 const SquareImage = require('@/assets/images/chooseBook_01.png');
 const RectangleImage = require('@/assets/images/chooseBook_02.png');
@@ -43,7 +44,7 @@ const BOOK_SIZES: BookSize[] = [
 export default function ChooseBookScreen() {
   const handleChooseSize = (size: BookSize['type']) => {
     router.push({
-      pathname: '/(edit)/chooseCover',
+      pathname: '/(edit)/chooseBookCover',
       params: { size }
     });
   };
@@ -51,7 +52,16 @@ export default function ChooseBookScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>サイズ選択</Text>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>サイズ選択</Text>
+        </View>
       </View>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.contentContainer}>
@@ -82,18 +92,27 @@ export default function ChooseBookScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#25292e',
   },
   header: {
-    paddingVertical: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+  },
+  backButton: {
+    paddingLeft: 16,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    marginRight: 40,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
   },
   content: {
     flex: 1,
