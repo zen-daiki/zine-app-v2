@@ -1,5 +1,6 @@
 import { Text, View, StyleSheet, Image, Pressable, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { getSavedBooks, saveBook } from '@/libs/storage';
 
 const Cover1Image = require('@/assets/images/chooseCover_01.webp');
 const Cover2Image = require('@/assets/images/chooseCover_02.webp');
@@ -36,9 +37,23 @@ const COVER_OPTIONS: CoverOption[] = [
 export default function ChooseCoverScreen() {
   const { size } = useLocalSearchParams<{ size: string }>();
 
-  const handleChooseCover = (coverType: CoverOption['type']) => {
-    // TODO: カバー選択後の処理
-    console.log(`Selected cover: ${coverType} for size: ${size}`);
+  const handleChooseCover = async (coverType: CoverOption['type']) => {
+    try {
+      // 新規データを作成
+      await saveBook({
+        size: size || '',
+        cover: {
+          color: coverType,
+          imageUrl: '',
+        },
+        pages: [],
+      });
+
+      // 次のステップへ進む
+      router.push('/(edit)/editBook');
+    } catch (error) {
+      console.error('カバーの設定に失敗しました:', error);
+    }
   };
 
   return (
