@@ -6,7 +6,6 @@ import * as MediaLibrary from 'expo-media-library';
 import { captureRef } from 'react-native-view-shot';
 import domtoimage from 'dom-to-image';
 import { router, Stack } from 'expo-router';
-import { Image } from 'expo-image';
 import Button from '@/components/Button';
 import ImageViewer from '@/components/ImageViewer';
 import IconButton from '@/components/IconButton';
@@ -14,7 +13,7 @@ import CircleButton from '@/components/CircleButton';
 import EmojiPicker from '@/components/EmojiPicker';
 import EmojiList from '@/components/EmojiList';
 import EmojiSticker from '@/components/EmojiSticker';
-import { saveImage } from '@/libs/storage';
+import { saveImage, createEmptyImage } from '@/libs/storage';
 
 const PlaceholderImage = require('@/assets/images/background-image_02.png');
 
@@ -63,8 +62,14 @@ export default function Index() {
     onModalClose();
   };
 
-  const handleCreateNew = () => {
-    router.push('/(edit)/chooseBook');
+  const handleCreateNew = async () => {
+    try {
+      await createEmptyImage();
+      router.push('/(edit)/chooseBook');
+    } catch (error) {
+      console.error('新規作成に失敗しました:', error);
+      Alert.alert('エラー', '新規作成に失敗しました。');
+    }
   };
 
   const onSaveImageAsync = async () => {
