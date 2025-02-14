@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, RefreshControl } from 'react-native';
-import { Text, Button } from 'react-native-paper';
-import { getAllStorageData, clearAllStorageData, handleAddTestData, type SavedImage } from '@/libs/storage';
+import { Text, Button, IconButton } from 'react-native-paper';
+import { getAllStorageData, clearAllStorageData, handleAddTestData, type SavedBook } from '@/libs/storage';
 
 export default function AsyncStorageViewScreen() {
-  const [storageData, setStorageData] = useState<SavedImage[]>([]);
+  const [storageData, setStorageData] = useState<SavedBook[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchStorageData = async () => {
@@ -27,8 +27,8 @@ export default function AsyncStorageViewScreen() {
 
   const handleTestDataAdd = async () => {
     try {
-      const updatedData = await handleAddTestData(storageData);
-      setStorageData(updatedData);
+      await handleAddTestData(storageData);
+      await fetchStorageData();
     } catch (error) {
       console.error('Error adding test data:', error);
     }
@@ -58,15 +58,21 @@ export default function AsyncStorageViewScreen() {
             onPress={handleTestDataAdd}
             style={styles.addButton}
           >
-            テストデータを追加
+            データの追加
           </Button>
           <Button
             mode="contained-tonal"
             onPress={handleClearStorage}
             style={styles.clearButton}
           >
-            ストレージをクリア
+            削除する
           </Button>
+          <IconButton
+            mode="contained"
+            icon="refresh"
+            onPress={fetchStorageData}
+            style={[styles.iconButton, { marginLeft: 8 }]}
+          />
         </View>
         <View style={styles.section}>
           {storageData.length > 0 ? (
@@ -122,6 +128,9 @@ const styles = StyleSheet.create({
   addButton: {
     flex: 1,
     backgroundColor: '#4CAF50',
+  },
+  iconButton: {
+    margin: 0,
   },
   storageItem: {
     backgroundColor: '#363b42',
