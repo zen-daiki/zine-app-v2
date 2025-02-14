@@ -1,51 +1,70 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { type ImageSource } from 'expo-image';
 
-export interface SavedImage {
-  id: string;
-  imageUri: string;
-  emoji?: ImageSource;
+export interface SavedBook {
+  id: number;
   createdAt: string;
+  size: string;
+  cover: {
+    color: string;
+    imageUrl: string;
+  };
+  pages: {
+    layout: string;
+    content: {
+      img: string;
+      text: string;
+    };
+  }[];
 }
 
-const STORAGE_KEY = 'saved_images';
+const STORAGE_KEY = 'saved_books';
 
-export const TEST_IMAGES = [
+export const TEST_BOOKS = [
   {
-    id: '1',
-    imageUri: 'https://picsum.photos/320/440?random=1',
-    emoji: require('@/assets/images/emoji2.png'),
+    id: 1,
     createdAt: new Date().toISOString(),
+    size: 'vertical',
+    cover: {
+      color: '#FF0000',
+      imageUrl: 'https://picsum.photos/320/440?random=1',
+    },
+    pages: [
+      {
+        layout: 'default',
+        content: {
+          img: '',
+          text: '',
+        },
+      },
+    ],
   },
-];
+] as const;
 
-export const saveImage = async (imageData: Omit<SavedImage, 'id' | 'createdAt'>) => {
+export const saveBook = async (bookData: Omit<SavedBook, 'id' | 'createdAt'>) => {
   try {
     // 既存のデータを取得
-    const existingData = await getSavedImages();
+    const existingData = await getSavedBooks();
     
-    // 新しいデータを作成
-    const newImage: SavedImage = {
-      id: Date.now().toString(),
-      imageUri: imageData.imageUri,
-      emoji: imageData.emoji,
+    const newBook: SavedBook = {
+      id: Date.now(),
       createdAt: new Date().toISOString(),
+      size: bookData.size,
+      cover: bookData.cover,
+      pages: [],
     };
 
-    // データを追加
-    const updatedData = [...existingData, newImage];
+    const updatedData = [...existingData, newBook];
     
-    // 保存
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
     
-    return newImage;
+    return newBook;
   } catch (error) {
-    console.error('画像の保存に失敗しました:', error);
+    console.error('本の保存に失敗しました:', error);
     throw error;
   }
 };
 
-export const getSavedImages = async (): Promise<SavedImage[]> => {
+export const getSavedBooks = async (): Promise<SavedBook[]> => {
   try {
     const data = await AsyncStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
@@ -55,7 +74,7 @@ export const getSavedImages = async (): Promise<SavedImage[]> => {
   }
 };
 
-export const getAllStorageData = async (): Promise<SavedImage[]> => {
+export const getAllStorageData = async (): Promise<SavedBook[]> => {
   try {
     const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
     return jsonValue ? JSON.parse(jsonValue) : [];
@@ -65,22 +84,22 @@ export const getAllStorageData = async (): Promise<SavedImage[]> => {
   }
 };
 
-export const deleteImage = async (id: string) => {
+export const deleteBook = async (id: number) => {
   try {
-    const existingData = await getSavedImages();
+    const existingData = await getSavedBooks();
     const updatedData = existingData.filter(item => item.id !== id);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
   } catch (error) {
-    console.error('画像の削除に失敗しました:', error);
+    console.error('本の削除に失敗しました:', error);
     throw error;
   }
 };
 
-export const deleteAllImages = async (): Promise<void> => {
+export const deleteAllBooks = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem(STORAGE_KEY);
   } catch (error) {
-    console.error('Failed to delete all images:', error);
+    console.error('Failed to delete all books:', error);
     throw error;
   }
 };
@@ -94,42 +113,46 @@ export const clearAllStorageData = async (): Promise<void> => {
   }
 };
 
-export const handleAddTestData = async (existingData: SavedImage[]): Promise<SavedImage[]> => {
+export const handleAddTestData = async (existingData: SavedBook[]): Promise<void> => {
   try {
     const lastId = existingData.length > 0 
-      ? Math.max(...existingData.map(item => parseInt(item.id))) 
+      ? Math.max(...existingData.map(item => item.id)) 
       : 0;
 
-    const newData = TEST_IMAGES.map((item, index) => ({
+    const newData = TEST_BOOKS.map((item, index) => ({
       ...item,
-      id: (lastId + index + 1).toString(),
+      id: lastId + index + 1,
       createdAt: new Date().toISOString(),
     }));
 
     const updatedData = [...existingData, ...newData];
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
-    return updatedData;
+    return;
   } catch (error) {
     console.error('Error adding test data:', error);
     throw error;
   }
 };
 
-export const createEmptyImage = async (): Promise<SavedImage> => {
+export const createEmptyBook = async (): Promise<SavedBook> => {
   try {
-    const existingData = await getSavedImages();
+    const existingData = await getSavedBooks();
     
-    const newImage: SavedImage = {
-      id: Date.now().toString(),
-      imageUri: '',
+    const newBook: SavedBook = {
+      id: Date.now(),
       createdAt: new Date().toISOString(),
+      size: '',
+      cover: {
+        color: '',
+        imageUrl: '',
+      },
+      pages: [],
     };
 
-    const updatedData = [...existingData, newImage];
+    const updatedData = [...existingData, newBook];
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
-    return newImage;
+    return newBook;
   } catch (error) {
-    console.error('新規画像データの作成に失敗しました:', error);
     throw error;
   }
 };
