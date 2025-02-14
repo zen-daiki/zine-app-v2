@@ -13,7 +13,8 @@ import CircleButton from '@/components/CircleButton';
 import EmojiPicker from '@/components/EmojiPicker';
 import EmojiList from '@/components/EmojiList';
 import EmojiSticker from '@/components/EmojiSticker';
-import { saveImage, createEmptyImage } from '@/libs/storage';
+import { saveBook } from '@/libs/storage';
+import { takePhoto } from '@/libs/camera';
 
 const PlaceholderImage = require('@/assets/images/background-image_02.png');
 
@@ -62,77 +63,15 @@ export default function Index() {
     onModalClose();
   };
 
-  const handleCreateNew = async () => {
-    try {
-      await createEmptyImage();
-      router.push('/(edit)/chooseBook');
-    } catch (error) {
-      console.error('新規作成に失敗しました:', error);
-      Alert.alert('エラー', '新規作成に失敗しました。');
-    }
+  const handleNavigateToCreate = () => {
+    router.push('/(edit)/chooseBook');
   };
 
-  const onSaveImageAsync = async () => {
-    if (!imageRef.current) return;
-
-    if (Platform.OS !== 'web') {
-      try {
-        const localUri = await captureRef(imageRef, {
-          height: 440,
-          quality: 1,
-        });
-
-        if (localUri) {
-          await saveImage({
-            imageUri: localUri,
-          });
-          await MediaLibrary.saveToLibraryAsync(localUri);
-          alert('保存しました');
-          onReset();
-        }
-      } catch (e) {
-        console.error('画像の保存に失敗しました:', e);
-        alert('画像の保存に失敗しました。');
-      }
-    } else {
-      try {
-        const dataUrl = await domtoimage.toJpeg(imageRef.current, {
-          quality: 0.95,
-          width: 320,
-          height: 440,
-        });
-
-        await saveImage({
-          imageUri: dataUrl,
-        });
-
-        const link = document.createElement('a');
-        link.download = 'sticker-smash.jpeg';
-        link.href = dataUrl;
-        link.click();
-        alert('保存しました！');
-        onReset();
-      } catch (e) {
-        console.error('画像の保存に失敗しました:', e);
-        alert('画像の保存に失敗しました。');
-      }
-    }
-  };
-
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status === 'granted') {
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        setSelectedImage(result.assets[0].uri);
-        setShowAppOptions(true);
-      }
-    } else {
-      alert('カメラへのアクセスが許可されていません');
+  const handleTakePhoto = async () => {
+    const result = await takePhoto();
+    if (result.success) {
+      setSelectedImage(result.uri);
+      setShowAppOptions(true);
     }
   };
 
@@ -169,15 +108,14 @@ export default function Index() {
           <View style={styles.optionsRow}>
             <IconButton icon="refresh" label="リセット" onPress={onReset} />
             <CircleButton onPress={() => setIsModalVisible(true)} />
-            <IconButton icon="save-alt" label="保存" onPress={onSaveImageAsync} />
           </View>
         </View>
       ) : (
         <View style={styles.footerContainer}>
           <View style={styles.buttonContainer}>
-            <Button theme="primary" label="新しく作成する" onPress={handleCreateNew} />
+            <Button theme="primary" label="新しく作成する" onPress={handleNavigateToCreate} />
             <Button theme="primary" label="写真を選択する" onPress={pickImageAsync} />
-            <Button label="写真を取る" onPress={takePhoto} />
+            <Button theme="primary" label="写真を取る" onPress={handleTakePhoto} />
           </View>
         </View>
       )}
