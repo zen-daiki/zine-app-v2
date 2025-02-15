@@ -6,6 +6,7 @@ import type {
   MicroCMSImage,
   MicroCMSDate,
 } from "microcms-js-sdk";
+import type { NewsItem } from '@/types/news';
 
 export type BlogsType = {
   id: string;
@@ -125,3 +126,11 @@ export async function getNextId(slug: string, entryId: string) {
     return null;
   }
 }
+
+export const getNewsById = async (id: string): Promise<NewsItem> => {
+  const response = await client.get({
+    endpoint: 'blogs',
+    contentId: id,
+  });
+  return response;
+};
