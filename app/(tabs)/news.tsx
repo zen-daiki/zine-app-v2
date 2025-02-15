@@ -1,8 +1,10 @@
-import { Text, View, StyleSheet, FlatList, Button } from 'react-native';
+import { Text, View, StyleSheet, FlatList, Pressable, RefreshControl } from 'react-native';
 import { useMicroCMS } from '@/hooks/useMicroCMS';
 import type { BlogsType } from '@/libs/microcms';
 import { Loading } from '@/components/Loading';
 import { ErrorMessage } from '@/components/ErrorMessage';
+import { router } from 'expo-router';
+import { formatDate } from '@/utils/date';
 
 export default function NewsScreen() {
   const { data: blogs, loading, error } = useMicroCMS<BlogsType>('blogs');
@@ -15,21 +17,15 @@ export default function NewsScreen() {
     return <ErrorMessage message={error.message} />;
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ja-JP', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-  };
-
   return (
     <View style={styles.container}>
       <FlatList
         data={blogs}
         renderItem={({ item }) => (
-          <View style={styles.blogItem}>
+          <Pressable
+            style={styles.blogItem}
+            onPress={() => router.push(`/(news)/${item.id}`)}
+          >
             <View style={styles.blogContent}>
               <View style={styles.metaData}>
                 <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
@@ -37,7 +33,7 @@ export default function NewsScreen() {
               </View>
               <Text style={styles.title}>{item.title}</Text>
             </View>
-          </View>
+          </Pressable>
         )}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
