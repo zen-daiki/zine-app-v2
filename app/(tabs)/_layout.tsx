@@ -12,7 +12,7 @@ type TabScreen = {
 export default function TabLayout() {
   const tabScreens: TabScreen[] = [
     {
-      name: "index",
+      name: "book",
       title: "ホーム",
       focusedIcon: "home-sharp",
       unfocusedIcon: "home-outline"
