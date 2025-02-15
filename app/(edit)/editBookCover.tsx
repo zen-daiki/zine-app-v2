@@ -2,16 +2,37 @@ import { View, StyleSheet, Image, Pressable, ScrollView } from 'react-native';
 import { Text, TextInput, Button } from 'react-native-paper';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { pickImage } from '@/libs/image';
-import { saveBook } from '@/libs/storage';
+import { saveBook, updateBook, getBook, createEmptyBook, type SavedBook } from '@/libs/storage';
 
 export default function EditBookCoverScreen() {
   const { size, coverType } = useLocalSearchParams<{ size: string; coverType: string }>();
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [coverImage, setCoverImage] = useState('');
+  const [book, setBook] = useState<SavedBook | null>(null);
+  const titleInputRef = useRef<any>(null);
+
+  useEffect(() => {
+    const initializeBook = async () => {
+      try {
+        const newBook = await createEmptyBook();
+        setBook(newBook);
+        setTitle('');
+        setSubtitle('');
+        setCoverImage('');
+        setTimeout(() => {
+          titleInputRef.current?.focus();
+        }, 100);
+      } catch (error) {
+        console.error('本の初期化に失敗しました:', error);
+      }
+    };
+
+    initializeBook();
+  }, [size, coverType]);
 
   const handleImagePick = async () => {
     const result = await pickImage();
@@ -21,22 +42,29 @@ export default function EditBookCoverScreen() {
   };
 
   const handleNext = async () => {
+    if (!book) return;
+
     try {
-      await saveBook({
-        size: size || '',
+      const updatedBook = await updateBook(book.id, {
         cover: {
-          color: coverType || '',
+          ...book.cover,
+          color: coverType || '#FF0000',
           imageUrl: coverImage,
           title: title.trim(),
           subtitle: subtitle.trim(),
         },
-        pages: [],
+        size: size || 'vertical',
       });
 
-      router.push('/(edit)/editPages');
+      setBook(updatedBook);
+      router.push('/(edit)/editPages?page=1');
     } catch (error) {
-      console.error('本の保存に失敗しました:', error);
+      console.error('表紙の保存に失敗しました:', error);
     }
+  };
+
+  const handleBack = () => {
+    router.push('/(edit)/chooseBookCover');
   };
 
   return (
@@ -44,7 +72,7 @@ export default function EditBookCoverScreen() {
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={handleBack}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -66,6 +94,7 @@ export default function EditBookCoverScreen() {
             )}
           </Pressable>
           <TextInput
+            ref={titleInputRef}
             label="タイトル"
             value={title}
             onChangeText={setTitle}
