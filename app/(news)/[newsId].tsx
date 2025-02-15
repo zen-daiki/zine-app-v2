@@ -7,14 +7,14 @@ import type { NewsItem } from '@/app/(tabs)/types/news';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function NewsDetailScreen() {
-  const { id } = useLocalSearchParams();
+  const { newsId } = useLocalSearchParams();
   const [news, setNews] = useState<NewsItem | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const data = await getNewsById(id as string);
+        const data = await getNewsById(newsId as string);
         setNews(data);
       } catch (error) {
         console.error('Failed to fetch news:', error);
@@ -24,7 +24,7 @@ export default function NewsDetailScreen() {
     };
 
     fetchNews();
-  }, [id]);
+  }, [newsId]);
 
   if (loading) {
     return (

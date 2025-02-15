@@ -24,7 +24,10 @@ export default function NewsScreen() {
         renderItem={({ item }) => (
           <Pressable
             style={styles.blogItem}
-            onPress={() => router.push(`/(news)/${item.id}`)}
+            onPress={() => router.push({
+              pathname: '/(news)/[newsId]',
+              params: { newsId: item.id }
+            })}
           >
             <View style={styles.blogContent}>
               <View style={styles.metaData}>
