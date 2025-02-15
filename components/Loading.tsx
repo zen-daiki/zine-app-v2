@@ -1,4 +1,3 @@
-
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 export function Loading() {
@@ -14,5 +13,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#25292e',
     justifyContent: 'center',
+    alignItems: 'center',
   },
 });
