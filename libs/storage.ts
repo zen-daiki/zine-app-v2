@@ -11,6 +11,8 @@ export interface SavedBook {
     subtitle: string;
   };
   pages: {
+    text: string;
+    imageUrl: string;
     layout: string;
     content: {
       img: string;
@@ -158,5 +160,21 @@ export const createEmptyBook = async (): Promise<SavedBook> => {
     return newBook;
   } catch (error) {
     throw error;
+  }
+};
+
+/**
+ * 保存された本のデータを取得する
+ */
+export const getBook = async (): Promise<SavedBook | null> => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
+    if (jsonValue != null) {
+      return JSON.parse(jsonValue);
+    }
+    return null;
+  } catch (error) {
+    console.error('本のデータの取得に失敗しました:', error);
+    return null;
   }
 };
