@@ -1,77 +1,116 @@
 import { View, StyleSheet, Image, Pressable, ScrollView } from 'react-native';
 import { Text, TextInput, Button } from 'react-native-paper';
-import { router } from 'expo-router';
+import { router, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import { pickImage } from '@/libs/image';
-import { getBook, saveBook, SavedBook } from '@/libs/storage';
+import { getBook, updateBook, SavedBook } from '@/libs/storage';
 
 // レイアウトオプションの定義
 const layoutOptions = [
+  { id: 'textOnly', label: 'テキストのみ' },
   { id: 'fullImage', label: '画像のみ' },
   { id: 'imageWithText', label: '画像とテキスト' },
-  { id: 'textOnly', label: 'テキストのみ' },
 ] as const;
 
-type LayoutOption = typeof layoutOptions[number]['id'];
+type LayoutOption = typeof layoutOptions[number]['id'] | 'default';
 
-// レイアウトごとのページコンテンツの型定義
-type PageContent = {
-  fullImage: {
-    layout: 'fullImage';
+// ページコンテンツの型定義
+interface PageData {
+  page: number;
+  layout: LayoutOption;
+  content: {
+    img: string;
     text: string;
-    imageUrl: string;
-    content: {
-      img: string;
-      text: string;
-    };
   };
-  imageWithText: {
-    layout: 'imageWithText';
-    text: string;
-    imageUrl: string;
-    content: {
-      img: string;
-      text: string;
-    };
-  };
-  textOnly: {
-    layout: 'textOnly';
-    text: string;
-    imageUrl: string;
-    content: {
-      img: string;
-      text: string;
-    };
-  };
-};
-
-type PageData = PageContent[LayoutOption];
+}
 
 export default function EditPagesScreen() {
+  const router = useRouter();
+  const { page } = useLocalSearchParams<{ page: string }>();
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedLayout, setSelectedLayout] = useState<LayoutOption | ''>('');
+  const [book, setBook] = useState<SavedBook | null>(null);
+  const [selectedLayout, setSelectedLayout] = useState<LayoutOption>('textOnly');
   const [pageImage, setPageImage] = useState('');
   const [pageText, setPageText] = useState('');
-  const [book, setBook] = useState<SavedBook | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // 初期データの読み込み
   useEffect(() => {
     const loadBook = async () => {
-      const savedBook = await getBook();
-      if (savedBook) {
-        setBook(savedBook);
-        // 現在のページのデータがあれば読み込む
-        const currentPageData = savedBook.pages[currentPage - 1];
-        if (currentPageData) {
-          setSelectedLayout(currentPageData.layout as LayoutOption);
-          setPageImage(currentPageData.imageUrl || '');
-          setPageText(currentPageData.text || '');
+      try {
+        const savedBook = await getBook();
+        if (savedBook) {
+          setBook(savedBook);
+          // 現在のページのデータがあれば読み込む
+          const currentPageData = savedBook.pages?.[currentPage - 1];
+          if (currentPageData) {
+            setSelectedLayout(currentPageData.layout as LayoutOption);
+            setPageImage(currentPageData.content.img || '');
+            setPageText(currentPageData.content.text || '');
+          } else {
+            // ページデータがない場合は初期値をセット
+            setSelectedLayout('textOnly');
+            setPageImage('');
+            setPageText('');
+          }
         }
+      } catch (error) {
+        console.error('本の読み込みに失敗しました:', error);
+      } finally {
+        setIsInitialLoad(false);
       }
     };
     loadBook();
-  }, [currentPage]);
+  }, []); // 初回のみ実行
+
+  // ページ番号が変更された時のデータ読み込み
+  useEffect(() => {
+    if (!isInitialLoad && book) {
+      const currentPageData = book.pages?.[currentPage - 1];
+      if (currentPageData) {
+        setSelectedLayout(currentPageData.layout as LayoutOption);
+        setPageImage(currentPageData.content.img || '');
+        setPageText(currentPageData.content.text || '');
+      } else {
+        setSelectedLayout('textOnly');
+        setPageImage('');
+        setPageText('');
+      }
+    }
+  }, [currentPage, book, isInitialLoad]);
+
+  // 現在のページデータを保存する関数
+  const saveCurrentPage = async () => {
+    if (!book) return;
+
+    const pageContent = {
+      page: currentPage,
+      layout: selectedLayout,
+      content: {
+        img: pageImage,
+        text: pageText,
+      },
+    };
+
+    const updatedPages = [...(book.pages || [])];
+    // 配列の長さを確認して必要なら拡張
+    while (updatedPages.length < currentPage) {
+      updatedPages.push({
+        page: updatedPages.length + 1,
+        layout: 'textOnly',
+        content: { img: '', text: '' }
+      });
+    }
+    updatedPages[currentPage - 1] = pageContent;
+
+    const updatedBook = await updateBook(book.id, {
+      pages: updatedPages,
+    });
+
+    setBook(updatedBook);
+    return updatedBook;
+  };
 
   const handleImagePick = async () => {
     const result = await pickImage();
@@ -80,61 +119,45 @@ export default function EditPagesScreen() {
     }
   };
 
-  const getPageContent = (layout: LayoutOption): PageData => {
-    const baseContent = {
-      content: {
-        img: pageImage,
-        text: pageText,
-      },
-    };
-
-    switch (layout) {
-      case 'fullImage':
-        return {
-          layout,
-          text: '',
-          imageUrl: pageImage,
-          ...baseContent,
-        };
-      case 'imageWithText':
-        return {
-          layout,
-          text: pageText,
-          imageUrl: pageImage,
-          ...baseContent,
-        };
-      case 'textOnly':
-        return {
-          layout,
-          text: pageText,
-          imageUrl: '',
-          ...baseContent,
-        };
+  const handleBack = async () => {
+    if (currentPage > 1) {
+      try {
+        // 現在のページを保存
+        await saveCurrentPage();
+        // 前のページに戻る
+        setCurrentPage(currentPage - 1);
+      } catch (error) {
+        console.error('ページの保存に失敗しました:', error);
+      }
+    } else {
+      router.push('/(edit)/editBookCover');
     }
   };
 
   const handleSavePage = async () => {
-    if (!book || !selectedLayout) return;
+    try {
+      // 現在のページを保存
+      const updatedBook = await saveCurrentPage();
+      if (updatedBook) {
+        // フィールドをリセット（次のページ用）
+        setSelectedLayout('textOnly');
+        setPageImage('');
+        setPageText('');
+        // 次のページへ進む
+        setCurrentPage(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('ページの保存に失敗しました:', error);
+    }
+  };
+
+  const handleFinish = async () => {
+    if (!book) return;
 
     try {
-      const pageContent = getPageContent(selectedLayout);
-      const updatedPages = [...(book.pages || [])];
-      updatedPages[currentPage - 1] = pageContent;
-
-      const updatedBook = {
-        ...book,
-        pages: updatedPages,
-      };
-
-      await saveBook(updatedBook);
-      setBook(updatedBook);
-
-      // 次のページへ進む
-      setCurrentPage(currentPage + 1);
-      // フォームをリセット
-      setSelectedLayout('');
-      setPageImage('');
-      setPageText('');
+      // 現在のページを保存
+      await saveCurrentPage();
+      router.push('/(menu)/check-storage');
     } catch (error) {
       console.error('ページの保存に失敗しました:', error);
     }
@@ -150,11 +173,9 @@ export default function EditPagesScreen() {
         return !!pageImage && !!pageText.trim();
       case 'textOnly':
         return !!pageText.trim();
+      default:
+        return false;
     }
-  };
-
-  const handleFinish = () => {
-    router.push('/(menu)/check-storage');
   };
 
   return (
@@ -162,7 +183,7 @@ export default function EditPagesScreen() {
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={handleBack}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
