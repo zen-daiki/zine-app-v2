@@ -1,66 +1,67 @@
-import { useLocalSearchParams, Stack } from 'expo-router';
-import { View, StyleSheet, ScrollView, Text } from 'react-native';
+import { useLocalSearchParams, Stack, router } from 'expo-router';
+import { View, StyleSheet, ScrollView, Text, Pressable } from 'react-native';
 import { formatDate } from '@/utils/date';
 import { useEffect, useState } from 'react';
 import { getNewsById } from '@/libs/microcms';
-import type { NewsItem } from '@/types/news';
+import type { NewsItem } from '@/app/(tabs)/types/news';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function NewsDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const [newsItem, setNewsItem] = useState<NewsItem | null>(null);
+  const { id } = useLocalSearchParams();
+  const [news, setNews] = useState<NewsItem | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchNewsDetail = async () => {
+    const fetchNews = async () => {
       try {
-        if (id) {
-          const data = await getNewsById(id);
-          setNewsItem(data);
-        }
+        const data = await getNewsById(id as string);
+        setNews(data);
       } catch (error) {
-        console.error('ニュースの取得に失敗しました:', error);
+        console.error('Failed to fetch news:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchNewsDetail();
+    fetchNews();
   }, [id]);
 
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text>Loading...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
-  if (!newsItem) {
+  if (!news) {
     return (
       <View style={styles.container}>
-        <Text>お知らせが見つかりませんでした。</Text>
+        <Text style={styles.errorText}>お知らせが見つかりませんでした</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Stack.Screen 
-        options={{
-          title: 'お知らせ',
-          headerStyle: {
-            backgroundColor: '#25292e',
-          },
-          headerTintColor: '#fff',
-        }} 
-      />
-      <ScrollView style={styles.content}>
-        <View style={styles.metaData}>
-          <Text style={styles.date}>{formatDate(newsItem.createdAt)}</Text>
-          <Text style={styles.category}>{newsItem.category.name}</Text>
+      <View style={styles.header}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>お知らせ</Text>
         </View>
-        <Text style={styles.title}>{newsItem.title}</Text>
-        <Text style={styles.body}>{newsItem.body}</Text>
+      </View>
+      <ScrollView style={styles.content}>
+        <View style={styles.contentContainer}>
+          <Text style={styles.date}>{formatDate(news.createdAt)}</Text>
+          <Text style={styles.title}>{news.title}</Text>
+          <Text style={styles.body}>{news.body}</Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -69,32 +70,60 @@ export default function NewsDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#25292e',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  backButton: {
+    marginLeft: 16,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    marginRight: 40,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   content: {
     flex: 1,
-    padding: 20,
   },
-  metaData: {
-    flexDirection: 'row',
-    marginBottom: 10,
+  contentContainer: {
+    padding: 16,
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  errorText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
   },
   date: {
     fontSize: 14,
-    color: '#666',
-    marginRight: 10,
-  },
-  category: {
-    fontSize: 14,
-    color: '#666',
+    color: '#999',
+    marginBottom: 8,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#fff',
+    marginBottom: 16,
   },
   body: {
     fontSize: 16,
     lineHeight: 24,
+    color: '#fff',
   },
 });

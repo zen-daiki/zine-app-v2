@@ -1,7 +1,6 @@
 import { Text, View, StyleSheet, Image, Pressable, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { saveBook } from '@/libs/storage';
 
 const Cover1Image = require('@/assets/images/chooseCover_01.webp');
 const Cover2Image = require('@/assets/images/chooseCover_02.webp');
