@@ -3,13 +3,16 @@ import { View, StyleSheet, ScrollView, Text, Pressable } from 'react-native';
 import { formatDate } from '@/utils/date';
 import { useEffect, useState } from 'react';
 import { getNewsById } from '@/libs/microcms';
-import type { NewsItem } from '@/app/(tabs)/types/news';
+import type { NewsItem } from '@/libs/microcms';
 import { Ionicons } from '@expo/vector-icons';
+import { Loading } from '@/components/Loading';
+import { NotFoundEntry } from '@/components/NotFoundEntry';
+import HTMLView from 'react-native-htmlview';
 
 export default function NewsDetailScreen() {
   const { newsId } = useLocalSearchParams();
   const [news, setNews] = useState<NewsItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -19,27 +22,19 @@ export default function NewsDetailScreen() {
       } catch (error) {
         console.error('Failed to fetch news:', error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
     fetchNews();
   }, [newsId]);
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
+  if (isLoading) {
+    return <Loading />;
   }
 
   if (!news) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>お知らせが見つかりませんでした</Text>
-      </View>
-    );
+    return <NotFoundEntry />;
   }
 
   return (
@@ -52,15 +47,23 @@ export default function NewsDetailScreen() {
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>お知らせ</Text>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#fff' }}>お知らせ</Text>
         </View>
       </View>
-      <ScrollView style={styles.content}>
+      <ScrollView style={{ flex: 1 }}>
         <View style={styles.contentContainer}>
           <Text style={styles.date}>{formatDate(news.createdAt)}</Text>
           <Text style={styles.title}>{news.title}</Text>
-          <Text style={styles.body}>{news.body}</Text>
+          <HTMLView
+            value={news.content}
+            stylesheet={{
+              p: styles.body,
+              a: styles.link,
+              ul: styles.list,
+              li: styles.listItem,
+            }}
+          />
         </View>
       </ScrollView>
     </View>
@@ -75,55 +78,41 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    padding: 16,
   },
   backButton: {
-    marginLeft: 16,
-  },
-  headerTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-    marginRight: 40,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  content: {
-    flex: 1,
+    marginRight: 16,
   },
   contentContainer: {
     padding: 16,
   },
-  loadingText: {
-    color: '#fff',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  errorText: {
-    color: '#fff',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 20,
-  },
   date: {
+    color: '#fff',
     fontSize: 14,
-    color: '#999',
     marginBottom: 8,
   },
   title: {
+    color: '#fff',
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 16,
   },
   body: {
+    color: '#fff',
     fontSize: 16,
     lineHeight: 24,
+  },
+  link: {
+    color: '#4a9eff',
+    textDecorationLine: 'underline',
+  },
+  list: {
+    marginVertical: 8,
+  },
+  listItem: {
     color: '#fff',
+    fontSize: 16,
+    lineHeight: 24,
+    marginLeft: 16,
   },
 });
