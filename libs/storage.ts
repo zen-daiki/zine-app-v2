@@ -7,6 +7,8 @@ export interface SavedBook {
   cover: {
     color: string;
     imageUrl: string;
+    title: string;
+    subtitle: string;
   };
   pages: {
     layout: string;
@@ -145,6 +147,8 @@ export const createEmptyBook = async (): Promise<SavedBook> => {
       cover: {
         color: '',
         imageUrl: '',
+        title: '',
+        subtitle: '',
       },
       pages: [],
     };
