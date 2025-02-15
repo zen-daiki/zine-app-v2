@@ -1,6 +1,7 @@
 import { Text, View, StyleSheet, Image, Pressable, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { saveBook } from '@/libs/storage';
 
 const Cover1Image = require('@/assets/images/chooseCover_01.webp');
 const Cover2Image = require('@/assets/images/chooseCover_02.webp');
@@ -38,8 +39,13 @@ export default function ChooseCoverScreen() {
   const { size } = useLocalSearchParams<{ size: string }>();
 
   const handleChooseCover = (coverType: CoverOption['type']) => {
-    // TODO: カバー選択後の処理
-    console.log(`Selected cover: ${coverType} for size: ${size}`);
+    router.push({
+      pathname: '/(edit)/editBookCover',
+      params: {
+        size,
+        coverType,
+      },
+    });
   };
 
   return (
