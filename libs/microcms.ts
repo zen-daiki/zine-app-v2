@@ -6,9 +6,8 @@ import type {
   MicroCMSImage,
   MicroCMSDate,
 } from "microcms-js-sdk";
-import type { NewsItem } from '@/app/(tabs)/types/news';
 
-export type BlogsType = {
+export type NewsItem = {
   id: string;
   title: string;
   content: string;
