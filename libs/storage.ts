@@ -11,8 +11,7 @@ export interface SavedBook {
     subtitle: string;
   };
   pages: {
-    text: string;
-    imageUrl: string;
+    page: number;
     layout: string;
     content: {
       img: string;
@@ -31,9 +30,12 @@ export const TEST_BOOKS = [
     cover: {
       color: '#FF0000',
       imageUrl: 'https://picsum.photos/320/440?random=1',
+      title: '',
+      subtitle: '',
     },
     pages: [
       {
+        page: 1,
         layout: 'default',
         content: {
           img: '',
@@ -54,7 +56,10 @@ export const saveBook = async (bookData: Omit<SavedBook, 'id' | 'createdAt'>) =>
       createdAt: new Date().toISOString(),
       size: bookData.size,
       cover: bookData.cover,
-      pages: [],
+      pages: bookData.pages.map((pageData, index) => ({
+        ...pageData,
+        page: index + 1,
+      })),
     };
 
     const updatedData = [...existingData, newBook];
@@ -139,26 +144,38 @@ export const handleAddTestData = async (existingData: SavedBook[]): Promise<void
 };
 
 export const createEmptyBook = async (): Promise<SavedBook> => {
-  try {
-    const existingData = await getSavedBooks();
-    
-    const newBook: SavedBook = {
-      id: Date.now(),
-      createdAt: new Date().toISOString(),
-      size: '',
-      cover: {
-        color: '',
-        imageUrl: '',
-        title: '',
-        subtitle: '',
+  const newBook: SavedBook = {
+    id: Date.now(),
+    createdAt: new Date().toISOString(),
+    size: '',  // サイズは選択画面で設定
+    cover: {
+      color: '',  // カラーは選択画面で設定
+      imageUrl: '',
+      title: '',
+      subtitle: '',
+    },
+    pages: [
+      {
+        page: 1,
+        layout: 'textOnly',
+        content: {
+          img: '',
+          text: '',
+        },
       },
-      pages: [],
-    };
+    ],
+  };
 
-    const updatedData = [...existingData, newBook];
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
+  try {
+    // 既存の本を取得
+    const books = await getSavedBooks();
+    // 新しい本を追加
+    const updatedBooks = [...books, newBook];
+    // 保存
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedBooks));
     return newBook;
   } catch (error) {
+    console.error('新しい本の作成に失敗しました:', error);
     throw error;
   }
 };
@@ -166,15 +183,57 @@ export const createEmptyBook = async (): Promise<SavedBook> => {
 /**
  * 保存された本のデータを取得する
  */
-export const getBook = async (): Promise<SavedBook | null> => {
+export const getBook = async (): Promise<SavedBook> => {
   try {
-    const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
-    if (jsonValue != null) {
-      return JSON.parse(jsonValue);
+    const data = await AsyncStorage.getItem(STORAGE_KEY);
+    let books: SavedBook[] = [];
+
+    if (data) {
+      books = JSON.parse(data);
     }
-    return null;
+
+    // 本がない場合は新しい本を作成
+    if (books.length === 0) {
+      return createEmptyBook();
+    }
+
+    // 最初の本を返す
+    return books[0];
   } catch (error) {
-    console.error('本のデータの取得に失敗しました:', error);
-    return null;
+    console.error('本の取得に失敗しました:', error);
+    // エラーが発生した場合も新しい本を作成
+    return createEmptyBook();
+  }
+};
+
+export const updateBook = async (bookId: number, updatedData: Partial<SavedBook>): Promise<SavedBook> => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEY);
+    let books: SavedBook[] = [];
+
+    if (data) {
+      books = JSON.parse(data);
+    }
+
+    const bookIndex = books.findIndex(book => book.id === bookId);
+    
+    if (bookIndex === -1) {
+      // 本が見つからない場合は新しい本を作成
+      const newBook = await createEmptyBook();
+      return updateBook(newBook.id, updatedData);
+    }
+
+    const updatedBook = {
+      ...books[bookIndex],
+      ...updatedData,
+    };
+
+    books[bookIndex] = updatedBook;
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+    
+    return updatedBook;
+  } catch (error) {
+    console.error('本の更新に失敗しました:', error);
+    throw error;
   }
 };
