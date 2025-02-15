@@ -33,7 +33,7 @@ export default function EditBookCoverScreen() {
         pages: [],
       });
 
-      router.push('/(menu)/check-storage');
+      router.push('/(edit)/editPages');
     } catch (error) {
       console.error('本の保存に失敗しました:', error);
     }
