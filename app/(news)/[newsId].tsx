@@ -2,8 +2,8 @@ import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { View, StyleSheet, ScrollView, Text, Pressable } from 'react-native';
 import { formatDate } from '@/utils/date';
 import { useEffect, useState } from 'react';
-import { getNewsById } from '@/libs/microcms';
-import type { NewsItem } from '@/libs/microcms';
+import { getBlogsById } from '@/libs/microcms';
+import type { BlogsType } from '@/libs/microcms';
 import { Ionicons } from '@expo/vector-icons';
 import { Loading } from '@/components/Loading';
 import { NotFoundEntry } from '@/components/NotFoundEntry';
@@ -11,13 +11,13 @@ import HTMLView from 'react-native-htmlview';
 
 export default function NewsDetailScreen() {
   const { newsId } = useLocalSearchParams();
-  const [news, setNews] = useState<NewsItem | null>(null);
+  const [news, setNews] = useState<BlogsType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const data = await getNewsById(newsId as string);
+        const data = await getBlogsById(newsId as string);
         setNews(data);
       } catch (error) {
         console.error('Failed to fetch news:', error);
@@ -29,13 +29,9 @@ export default function NewsDetailScreen() {
     fetchNews();
   }, [newsId]);
 
-  if (isLoading) {
-    return <Loading />;
-  }
+  if (isLoading) return <Loading />;
 
-  if (!news) {
-    return <NotFoundEntry />;
-  }
+  if (!news) return <NotFoundEntry />;
 
   return (
     <View style={styles.container}>

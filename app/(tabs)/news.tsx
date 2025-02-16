@@ -1,21 +1,17 @@
-import { Text, View, StyleSheet, FlatList, Pressable, RefreshControl } from 'react-native';
+import { Text, View, StyleSheet, FlatList, Pressable } from 'react-native';
 import { useMicroCMS } from '@/hooks/useMicroCMS';
-import type { BlogsType } from '@/libs/microcms';
 import { Loading } from '@/components/Loading';
 import { ErrorMessage } from '@/components/ErrorMessage';
 import { router } from 'expo-router';
 import { formatDate } from '@/utils/date';
+import type { BlogsType } from '@/libs/microcms';
 
 export default function NewsScreen() {
   const { data: blogs, loading, error } = useMicroCMS<BlogsType>('blogs');
 
-  if (loading) {
-    return <Loading />;
-  }
+  if (loading) return <Loading />;
 
-  if (error) {
-    return <ErrorMessage message={error.message} />;
-  }
+  if (error) return <ErrorMessage message={error.message} />;
 
   return (
     <View style={styles.container}>
@@ -76,7 +72,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 4,
+    marginTop: 6,
   },
   category: {
     color: '#000',
