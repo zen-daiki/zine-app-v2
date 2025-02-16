@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect, useRef } from 'react';
 import { updateBook, createEmptyBook, type SavedBook } from '@/libs/storage';
 
-// 共通の入力フィールドのプロパティ
 const inputProps = {
   mode: 'outlined' as const,
   outlineColor: '#FFD700',
@@ -20,43 +19,41 @@ const inputProps = {
 
 export default function EditBookCoverScreen() {
   const { size, coverType } = useLocalSearchParams<{ size: string; coverType: string }>();
-
   const titleInputRef = useRef<any>(null);
-
-  // フォームの状態
   const [formState, setFormState] = useState({
     title: '',
     subtitle: '',
   });
-
-  // アプリケーションの状態
   const [appState, setAppState] = useState({
     book: null as SavedBook | null,
     isLoading: false,
     error: null as string | null,
   });
 
-  // フォームの状態を更新する関数
+  /**
+   * フォームの状態を更新し、エラーをクリアする
+   * @param field - 更新するフィールド名（title または subtitle）
+   * @param value - 新しい値
+   */
   const updateFormState = (field: keyof typeof formState, value: string) => {
     setFormState(prev => ({ ...prev, [field]: value }));
-    // エラーをクリア
     if (appState.error) {
       setAppState(prev => ({ ...prev, error: null }));
     }
   };
 
-  // 本を初期化する
+  /**
+   * 本の初期化とフォームのリセットを行う
+   */
   useEffect(() => {
     const initializeBook = async () => {
       try {
         const newBook = await createEmptyBook();
         setAppState(prev => ({ ...prev, book: newBook, error: null }));
-        // フォームをリセット
         setFormState({
           title: '',
           subtitle: '',
         });
-        // タイトル入力にフォーカス
         setTimeout(() => {
           titleInputRef.current?.focus();
         }, 100);
@@ -72,21 +69,11 @@ export default function EditBookCoverScreen() {
     initializeBook();
   }, [size, coverType]);
 
-  // フォームを検証する
-  const validateForm = () => {
-    if (!formState.title.trim()) {
-      setAppState(prev => ({
-        ...prev,
-        error: 'タイトルを入力してください',
-      }));
-      return false;
-    }
-    return true;
-  };
-
-  // 次のページへ進む
+  /**
+   * 表紙情報を保存し、次のページへ進む
+   */
   const handleNext = async () => {
-    if (!appState.book || !validateForm()) return;
+    if (!appState.book) return;
 
     setAppState(prev => ({ ...prev, isLoading: true, error: null }));
 
@@ -133,7 +120,7 @@ export default function EditBookCoverScreen() {
         <View style={styles.contentContainer}>
           <TextInput
             ref={titleInputRef}
-            label="タイトル"
+            label="タイトル（必須）"
             value={formState.title}
             onChangeText={(value) => updateFormState('title', value)}
             style={styles.input}
@@ -164,7 +151,7 @@ export default function EditBookCoverScreen() {
           loading={appState.isLoading}
           buttonColor="#FFFFFF"
         >
-          次へ
+          次へ（ページ作成）
         </Button>
       </View>
     </View>
