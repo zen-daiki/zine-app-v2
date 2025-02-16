@@ -84,6 +84,11 @@ export default function EditPagesScreen() {
   const saveCurrentPage = async () => {
     if (!book) return;
 
+    // フィールドが空の場合は保存しない
+    if (!isPageContentValid()) {
+      return book;
+    }
+
     const pageContent = {
       page: currentPage,
       layout: selectedLayout,
@@ -93,16 +98,15 @@ export default function EditPagesScreen() {
       },
     };
 
-    const updatedPages = [...(book.pages || [])];
-    // 配列の長さを確認して必要なら拡張
-    while (updatedPages.length < currentPage) {
-      updatedPages.push({
-        page: updatedPages.length + 1,
-        layout: 'textOnly',
-        content: { img: '', text: '' }
-      });
+    let updatedPages = [...(book.pages || [])];
+    
+    // 現在のページが配列の範囲内にある場合のみ更新
+    if (currentPage <= updatedPages.length) {
+      updatedPages[currentPage - 1] = pageContent;
+    } else {
+      // 新しいページを追加する場合
+      updatedPages.push(pageContent);
     }
-    updatedPages[currentPage - 1] = pageContent;
 
     const updatedBook = await updateBook(book.id, {
       pages: updatedPages,
