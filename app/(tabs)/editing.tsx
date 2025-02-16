@@ -1,35 +1,35 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, View, FlatList, Pressable, Alert, Text } from 'react-native';
+import { useState, useCallback } from 'react';
+import { StyleSheet, View, FlatList, Pressable, Alert, Text, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const STORAGE_KEY = '@saved_images';
-
-type SavedImage = {
-  id: string;
-  imageUri: string;
-  emoji?: any;
-  createdAt: string;
-};
+import { useFocusEffect } from 'expo-router';
+import { getSavedBooks, deleteBook, type SavedBook } from '@/libs/storage';
 
 export default function EditingScreen() {
-  const [savedImages, setSavedImages] = useState<SavedImage[]>([]);
+  const [savedBooks, setSavedBooks] = useState<SavedBook[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadSavedImages = async () => {
+  const loadSavedBooks = async () => {
     try {
-      const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
-      const data = jsonValue ? JSON.parse(jsonValue) : [];
-      setSavedImages(data.sort((a: SavedImage, b: SavedImage) => 
+      const books = await getSavedBooks();
+      setSavedBooks(books.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       ));
     } catch (error) {
-      console.error('Error loading saved images:', error);
+      console.error('保存された本の読み込みに失敗しました:', error);
     }
   };
 
-  useEffect(() => {
-    loadSavedImages();
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadSavedBooks();
+    setRefreshing(false);
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSavedBooks();
+    }, [])
+  );
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -42,10 +42,10 @@ export default function EditingScreen() {
     });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: number) => {
     Alert.alert(
-      '画像の削除',
-      'この画像を削除してもよろしいですか？',
+      '本の削除',
+      'この本を削除してもよろしいですか？',
       [
         {
           text: 'キャンセル',
@@ -56,17 +56,10 @@ export default function EditingScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
-              if (jsonValue) {
-                const data = JSON.parse(jsonValue);
-                const filteredData = data.filter((item: SavedImage) => item.id !== id);
-                await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filteredData));
-                setSavedImages(filteredData.sort((a: SavedImage, b: SavedImage) => 
-                  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                ));
-              }
+              await deleteBook(id);
+              await loadSavedBooks();
             } catch (error) {
-              console.error('Error deleting image:', error);
+              console.error('本の削除に失敗しました:', error);
             }
           },
         },
@@ -77,30 +70,40 @@ export default function EditingScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={savedImages}
-        keyExtractor={(item) => item.id}
+        data={savedBooks}
+        keyExtractor={(item) => item.id.toString()}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#FFFFFF"
+            colors={['#FFFFFF']}
+          />
+        }
         renderItem={({ item }) => (
           <View style={styles.itemContainer}>
             <View style={styles.imageContainer}>
               <Image
-                source={{ uri: item.imageUri }}
+                source={{ uri: item.cover.imageUrl }}
                 style={styles.image}
                 contentFit="cover"
                 transition={200}
               />
-              {item.emoji && (
-                <Image
-                  source={item.emoji}
-                  style={styles.emoji}
-                  contentFit="contain"
-                  transition={200}
-                />
-              )}
             </View>
             <View style={styles.textContainer}>
-              <Text style={styles.dateText}>
-                {formatDateTime(item.createdAt)}
-              </Text>
+              <View>
+                <Text style={styles.titleText} numberOfLines={1}>
+                  {item.cover.title}
+                </Text>
+                {item.cover.subtitle && (
+                  <Text style={styles.subtitleText} numberOfLines={1}>
+                    {item.cover.subtitle}
+                  </Text>
+                )}
+                <Text style={styles.dateText}>
+                  {formatDateTime(item.createdAt)}
+                </Text>
+              </View>
               <Pressable style={styles.deleteButton} onPress={() => handleDelete(item.id)}>
                 <Text style={styles.deleteButtonText}>削除</Text>
               </Pressable>
@@ -127,6 +130,7 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 4,
+    minHeight: '100%',
   },
   itemContainer: {
     flex: 1,
@@ -147,25 +151,30 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  emoji: {
-    position: 'absolute',
-    width: '30%',
-    height: '30%',
-    top: '35%',
-    left: '35%',
-  },
   textContainer: {
     flex: 1,
     justifyContent: 'space-between',
   },
-  dateText: {
+  titleText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  subtitleText: {
+    color: '#ccc',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  dateText: {
+    color: '#999',
     fontSize: 12,
   },
   deleteButton: {
     backgroundColor: '#ff0000',
     padding: 8,
     borderRadius: 4,
+    alignSelf: 'flex-start',
   },
   deleteButtonText: {
     color: '#fff',
