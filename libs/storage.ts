@@ -30,8 +30,8 @@ export const TEST_BOOKS = [
     cover: {
       color: '#FF0000',
       imageUrl: 'https://picsum.photos/320/440?random=1',
-      title: '',
-      subtitle: '',
+      title: 'ダミータイトル',
+      subtitle: 'ダミーサブタイトル',
     },
     pages: [
       {
