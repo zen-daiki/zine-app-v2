@@ -109,7 +109,7 @@ export default function EditingScreen() {
         )}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <View style={styles.container}>
+          <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
               編集中のZINEはありません
             </Text>
@@ -172,9 +172,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 600,
+  },
   emptyText: {
     color: '#fff',
     fontSize: 16,
-    textAlign: 'center',
   },
 });
