@@ -6,3 +6,10 @@ export type BookSize = {
   price: string;
   image: any;
 };
+
+export type CoverOption = {
+  id: string;
+  type: 'orange' | 'sky-blue' | 'gray';
+  title: string;
+  image: any;
+};
