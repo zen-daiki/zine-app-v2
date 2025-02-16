@@ -1,37 +1,20 @@
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { View, StyleSheet, ScrollView, Text, Pressable } from 'react-native';
 import { formatDate } from '@/utils/date';
-import { useEffect, useState } from 'react';
-import { getBlogsById } from '@/libs/microcms';
-import type { BlogsType } from '@/libs/microcms';
 import { Ionicons } from '@expo/vector-icons';
 import { Loading } from '@/components/Loading';
 import { NotFoundEntry } from '@/components/NotFoundEntry';
+import { ErrorMessage } from '@/components/ErrorMessage';
 import HTMLView from 'react-native-htmlview';
+import { useBlogDetail } from '@/hooks/useBlogDetail';
 
 export default function NewsDetailScreen() {
   const { newsId } = useLocalSearchParams();
-  const [news, setNews] = useState<BlogsType | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const data = await getBlogsById(newsId as string);
-        setNews(data);
-      } catch (error) {
-        console.error('Failed to fetch news:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchNews();
-  }, [newsId]);
+  const { blog, isLoading, error } = useBlogDetail(newsId as string);
 
   if (isLoading) return <Loading />;
-
-  if (!news) return <NotFoundEntry />;
+  if (error) return <ErrorMessage message={error.message} />;
+  if (!blog) return <NotFoundEntry />;
 
   return (
     <View style={styles.container}>
@@ -49,10 +32,10 @@ export default function NewsDetailScreen() {
       </View>
       <ScrollView style={{ flex: 1 }}>
         <View style={styles.contentContainer}>
-          <Text style={styles.date}>{formatDate(news.createdAt)}</Text>
-          <Text style={styles.title}>{news.title}</Text>
+          <Text style={styles.date}>{formatDate(blog.createdAt)}</Text>
+          <Text style={styles.title}>{blog.title}</Text>
           <HTMLView
-            value={news.content}
+            value={blog.content}
             stylesheet={{
               p: styles.body,
               a: styles.link,
