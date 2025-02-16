@@ -1,7 +1,7 @@
 import { View, StyleSheet, ScrollView, Pressable, Text } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SizeOption } from '@/components/book/SizeOption';
+import { SizeOption } from '@/components/SizeOption';
 import type { BookSize } from '@/types/book';
 
 const SquareImage = require('@/assets/images/chooseBook_01.png');
