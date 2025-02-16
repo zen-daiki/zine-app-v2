@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COVER_OPTIONS } from '@/constants/covers';
+import { COVER_OPTIONS } from '@/constants/book';
 import { CoverOptionItem } from '@/components/CoverOption';
 
 export default function ChooseCoverScreen() {

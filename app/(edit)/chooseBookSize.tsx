@@ -2,29 +2,8 @@ import { View, StyleSheet, ScrollView, Pressable, Text } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SizeOption } from '@/components/SizeOption';
+import { BOOK_SIZES } from '@/constants/book';
 import type { BookSize } from '@/types/book';
-
-const SquareImage = require('@/assets/images/chooseBook_01.png');
-const RectangleImage = require('@/assets/images/chooseBook_02.png');
-
-const BOOK_SIZES: BookSize[] = [
-  {
-    id: '1',
-    type: 'vertical',
-    title: '長方形',
-    size: '102×102mm',
-    price: '1,360円(税込)より',
-    image: SquareImage,
-  },
-  {
-    id: '2',
-    type: 'square',
-    title: '正方形',
-    size: '102×102mm',
-    price: '1,360円(税込)より',
-    image: RectangleImage,
-  },
-];
 
 export default function ChooseBookScreen() {
   const handleChooseSize = (size: BookSize['type']) => {

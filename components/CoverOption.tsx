@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
-import type { CoverOption } from '@/types/cover';
+import type { CoverOption } from '@/types/book';
 
 type Props = {
   cover: CoverOption;
