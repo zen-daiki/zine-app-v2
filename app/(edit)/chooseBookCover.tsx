@@ -5,7 +5,7 @@ import { COVER_OPTIONS } from '@/constants/book';
 import { CoverOptionItem } from '@/components/CoverOption';
 
 export default function ChooseCoverScreen() {
-  const { size } = useLocalSearchParams<{ size: string }>();
+  const { size, id } = useLocalSearchParams<{ size: string; id: string }>();
 
   const handleChooseCover = (coverType: string) => {
     router.push({
@@ -28,7 +28,7 @@ export default function ChooseCoverScreen() {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>カバーデザイン選択</Text>
+          <Text style={styles.headerTitle}>カバー選択（ID: {id}）</Text>
         </View>
       </View>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

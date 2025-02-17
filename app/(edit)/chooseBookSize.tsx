@@ -1,5 +1,5 @@
 import { View, StyleSheet, ScrollView, Pressable, Text } from 'react-native';
-import { router } from 'expo-router';
+import { router, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SizeOption } from '@/components/SizeOption';
 import { BOOK_SIZES } from '@/constants/book';
@@ -13,6 +13,9 @@ export default function ChooseBookScreen() {
     });
   };
 
+  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -24,7 +27,7 @@ export default function ChooseBookScreen() {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>サイズ選択</Text>
+          <Text style={styles.headerTitle}>サイズ選択（ID: {id}）</Text>
         </View>
       </View>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
