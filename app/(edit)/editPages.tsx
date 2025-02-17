@@ -4,7 +4,7 @@ import { router, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import { pickImage } from '@/libs/image';
-import { getBook, updateBook, SavedBook } from '@/libs/storage';
+import { getBookById, updateBook, type SavedBook } from '@/libs/storage';
 
 // レイアウトオプションの定義
 const layoutOptions = [
@@ -27,19 +27,25 @@ interface PageData {
 
 export default function EditPagesScreen() {
   const router = useRouter();
-  const { page } = useLocalSearchParams<{ page: string }>();
+  const { page, id } = useLocalSearchParams<{ page: string; id: string }>();
   const [currentPage, setCurrentPage] = useState(1);
   const [book, setBook] = useState<SavedBook | null>(null);
   const [selectedLayout, setSelectedLayout] = useState<LayoutOption>('textOnly');
   const [pageImage, setPageImage] = useState('');
   const [pageText, setPageText] = useState('');
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // 初期データの読み込み
   useEffect(() => {
     const loadBook = async () => {
+      if (!id) {
+        setError('本のIDが指定されていません');
+        return;
+      }
+
       try {
-        const savedBook = await getBook();
+        const savedBook = await getBookById(Number(id));
         if (savedBook) {
           setBook(savedBook);
           // 現在のページのデータがあれば読み込む
@@ -48,236 +54,171 @@ export default function EditPagesScreen() {
             setSelectedLayout(currentPageData.layout as LayoutOption);
             setPageImage(currentPageData.content.img || '');
             setPageText(currentPageData.content.text || '');
-          } else {
-            // ページデータがない場合は初期値をセット
-            setSelectedLayout('textOnly');
-            setPageImage('');
-            setPageText('');
           }
+        } else {
+          setError('本が見つかりませんでした');
         }
       } catch (error) {
+        setError('本の読み込みに失敗しました');
         console.error('本の読み込みに失敗しました:', error);
       } finally {
         setIsInitialLoad(false);
       }
     };
+
     loadBook();
-  }, []); // 初回のみ実行
+  }, [id, currentPage]);
 
-  // ページ番号が変更された時のデータ読み込み
-  useEffect(() => {
-    if (!isInitialLoad && book) {
-      const currentPageData = book.pages?.[currentPage - 1];
-      if (currentPageData) {
-        setSelectedLayout(currentPageData.layout as LayoutOption);
-        setPageImage(currentPageData.content.img || '');
-        setPageText(currentPageData.content.text || '');
-      } else {
-        setSelectedLayout('textOnly');
-        setPageImage('');
-        setPageText('');
-      }
-    }
-  }, [currentPage, book, isInitialLoad]);
-
-  // 現在のページデータを保存する関数
-  const saveCurrentPage = async () => {
+  // 画像選択
+  const handleSelectImage = async () => {
     if (!book) return;
 
-    // フィールドが空の場合は保存しない
-    if (!isPageContentValid()) {
-      return book;
-    }
-
-    const pageContent = {
-      page: currentPage,
-      layout: selectedLayout,
-      content: {
-        img: pageImage,
-        text: pageText,
-      },
-    };
-
-    let updatedPages = [...(book.pages || [])];
-    
-    // 現在のページが配列の範囲内にある場合のみ更新
-    if (currentPage <= updatedPages.length) {
-      updatedPages[currentPage - 1] = pageContent;
-    } else {
-      // 新しいページを追加する場合
-      updatedPages.push(pageContent);
-    }
-
-    const updatedBook = await updateBook(book.id, {
-      pages: updatedPages,
-    });
-
-    setBook(updatedBook);
-    return updatedBook;
-  };
-
-  const handleImagePick = async () => {
-    const result = await pickImage();
-    if (result) {
-      setPageImage(result);
-    }
-  };
-
-  const handleBack = async () => {
-    if (currentPage > 1) {
-      try {
-        // 現在のページを保存
-        await saveCurrentPage();
-        // 前のページに戻る
-        setCurrentPage(currentPage - 1);
-      } catch (error) {
-        console.error('ページの保存に失敗しました:', error);
-      }
-    } else {
-      router.push('/(edit)/editBookCover');
-    }
-  };
-
-  const handleSavePage = async () => {
     try {
-      // 現在のページを保存
-      const updatedBook = await saveCurrentPage();
-      if (updatedBook) {
-        // フィールドをリセット（次のページ用）
-        setSelectedLayout('textOnly');
-        setPageImage('');
-        setPageText('');
-        // 次のページへ進む
-        setCurrentPage(prev => prev + 1);
+      const result = await pickImage();
+      if (result) {
+        setPageImage(result);
+        // 画像が選択されたら、レイアウトを画像ありに変更
+        if (selectedLayout === 'textOnly') {
+          setSelectedLayout('imageWithText');
+        }
       }
+    } catch (error) {
+      console.error('画像の選択に失敗しました:', error);
+    }
+  };
+
+  // ページデータの保存
+  const handleSave = async () => {
+    if (!book || !id) return;
+
+    try {
+      const updatedPages = [...(book.pages || [])];
+      updatedPages[currentPage - 1] = {
+        page: currentPage,
+        layout: selectedLayout,
+        content: {
+          img: pageImage,
+          text: pageText,
+        },
+      };
+
+      await updateBook(Number(id), {
+        pages: updatedPages,
+      });
+
+      router.push('/');
     } catch (error) {
       console.error('ページの保存に失敗しました:', error);
     }
   };
 
-  const handleFinish = async () => {
-    if (!book) return;
+  if (isInitialLoad) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.loadingText}>読み込み中...</Text>
+      </View>
+    );
+  }
 
-    try {
-      // 現在のページを保存
-      await saveCurrentPage();
-      router.push('/(menu)/check-storage');
-    } catch (error) {
-      console.error('ページの保存に失敗しました:', error);
-    }
-  };
-
-  const isPageContentValid = (): boolean => {
-    if (!selectedLayout) return false;
-
-    switch (selectedLayout) {
-      case 'fullImage':
-        return !!pageImage;
-      case 'imageWithText':
-        return !!pageImage && !!pageText.trim();
-      case 'textOnly':
-        return !!pageText.trim();
-      default:
-        return false;
-    }
-  };
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Button
+          mode="contained"
+          onPress={() => router.back()}
+          style={styles.errorButton}
+        >
+          戻る
+        </Button>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
-          onPress={handleBack}
+          onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>{currentPage}ページ目</Text>
+          <Text style={styles.headerTitle}>ページ {currentPage} の編集（ID: {id}）</Text>
         </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.contentContainer}>
-          <Text style={styles.sectionTitle}>レイアウトを選択</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>レイアウト</Text>
           <View style={styles.layoutOptions}>
             {layoutOptions.map((option) => (
               <Pressable
                 key={option.id}
                 style={[
                   styles.layoutOption,
-                  selectedLayout === option.id && styles.layoutOptionSelected,
+                  selectedLayout === option.id && styles.selectedLayoutOption,
                 ]}
-                onPress={() => {
-                  setSelectedLayout(option.id);
-                  // レイアウト変更時にフィールドをリセット
-                  if (option.id === 'textOnly') {
-                    setPageImage('');
-                  }
-                }}
+                onPress={() => setSelectedLayout(option.id)}
               >
-                <Text style={styles.layoutOptionText}>{option.label}</Text>
+                <Text
+                  style={[
+                    styles.layoutOptionText,
+                    selectedLayout === option.id && styles.selectedLayoutOptionText,
+                  ]}
+                >
+                  {option.label}
+                </Text>
               </Pressable>
             ))}
           </View>
+        </View>
 
-          {selectedLayout !== 'textOnly' && (
-            <View style={styles.imageSection}>
-              <Pressable style={styles.imageContainer} onPress={handleImagePick}>
-                {pageImage ? (
-                  <Image source={{ uri: pageImage }} style={styles.pageImage} resizeMode="cover" />
-                ) : (
-                  <View style={styles.placeholderContainer}>
-                    <Ionicons name="image-outline" size={48} color="#666" />
-                    <Text style={styles.placeholderText}>タップして画像を選択</Text>
-                  </View>
-                )}
-              </Pressable>
-            </View>
-          )}
+        {(selectedLayout === 'fullImage' || selectedLayout === 'imageWithText') && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>画像</Text>
+            <Pressable style={styles.imageContainer} onPress={handleSelectImage}>
+              {pageImage ? (
+                <Image source={{ uri: pageImage }} style={styles.image} />
+              ) : (
+                <View style={styles.imagePlaceholder}>
+                  <Ionicons name="image-outline" size={48} color="#fff" />
+                  <Text style={styles.imagePlaceholderText}>
+                    タップして画像を選択
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        )}
 
-          {selectedLayout !== 'fullImage' && (
+        {(selectedLayout === 'textOnly' || selectedLayout === 'imageWithText') && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>テキスト</Text>
             <TextInput
-              label="テキスト"
+              multiline
               value={pageText}
               onChangeText={setPageText}
-              style={styles.input}
-              mode="outlined"
-              outlineColor="#FFD700"
-              activeOutlineColor="#FFD700"
-              textColor="#000000"
-              multiline
-              numberOfLines={4}
-              theme={{
-                colors: {
-                  background: '#FFFFFF',
-                },
-              }}
+              style={styles.textInput}
+              placeholder="テキストを入力"
+              placeholderTextColor="#999"
             />
-          )}
+          </View>
+        )}
+
+        <View style={styles.buttonContainer}>
+          <Button
+            mode="contained"
+            onPress={handleSave}
+            style={styles.button}
+            labelStyle={styles.buttonLabel}
+          >
+            保存
+          </Button>
         </View>
       </ScrollView>
-
-      <View style={styles.footer}>
-        <Button
-          mode="contained"
-          onPress={handleSavePage}
-          style={styles.button}
-          labelStyle={styles.buttonLabel}
-          disabled={!isPageContentValid()}
-          buttonColor="#FFFFFF"
-        >
-          次のページへ
-        </Button>
-        <Button
-          mode="outlined"
-          onPress={handleFinish}
-          style={[styles.button, styles.finishButton]}
-          labelStyle={[styles.buttonLabel, styles.finishButtonLabel]}
-        >
-          完了
-        </Button>
-      </View>
     </View>
   );
 }
@@ -287,108 +228,113 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#25292e',
   },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  errorText: {
+    color: '#ff0000',
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  errorButton: {
+    backgroundColor: '#FFD700',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#ffffff20',
   },
   backButton: {
-    paddingLeft: 16,
+    marginRight: 16,
   },
   headerTitleContainer: {
     flex: 1,
-    alignItems: 'center',
-    marginRight: 40,
   },
   headerTitle: {
+    color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff',
   },
   content: {
     flex: 1,
   },
-  contentContainer: {
+  section: {
     padding: 16,
-    paddingBottom: 32,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ffffff20',
   },
   sectionTitle: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ffffff',
     marginBottom: 16,
   },
   layoutOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 24,
   },
   layoutOption: {
+    flex: 1,
+    minWidth: '30%',
     padding: 12,
     borderRadius: 8,
     backgroundColor: '#2d3238',
-    borderWidth: 1,
-    borderColor: '#666',
+    alignItems: 'center',
   },
-  layoutOptionSelected: {
-    borderColor: '#FFD700',
-    backgroundColor: '#3d4248',
+  selectedLayoutOption: {
+    backgroundColor: '#FFD700',
   },
   layoutOptionText: {
-    color: '#ffffff',
+    color: '#fff',
     fontSize: 14,
   },
-  imageSection: {
-    marginBottom: 24,
+  selectedLayoutOptionText: {
+    color: '#000',
   },
   imageContainer: {
-    width: '100%',
-    height: 200,
+    aspectRatio: 16 / 9,
     backgroundColor: '#2d3238',
-    borderRadius: 12,
+    borderRadius: 8,
     overflow: 'hidden',
   },
-  pageImage: {
+  image: {
     width: '100%',
     height: '100%',
   },
-  placeholderContainer: {
+  imagePlaceholder: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  placeholderText: {
+  imagePlaceholderText: {
+    color: '#fff',
     marginTop: 8,
-    color: '#666',
-    fontSize: 14,
   },
-  input: {
-    marginBottom: 16,
+  textInput: {
+    backgroundColor: '#2d3238',
+    color: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    minHeight: 120,
+    textAlignVertical: 'top',
   },
-  footer: {
+  buttonContainer: {
     padding: 16,
-    paddingBottom: 32,
-    backgroundColor: '#25292e',
-    borderTopWidth: 1,
-    borderTopColor: '#333',
-    gap: 8,
   },
   button: {
-    height: 48,
-    justifyContent: 'center',
+    backgroundColor: '#FFD700',
   },
   buttonLabel: {
+    color: '#000',
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#000000',
-  },
-  finishButton: {
-    borderColor: '#FFD700',
-  },
-  finishButtonLabel: {
-    color: '#FFD700',
   },
 });
