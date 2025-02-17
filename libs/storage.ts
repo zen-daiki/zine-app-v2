@@ -181,28 +181,15 @@ export const createEmptyBook = async (): Promise<SavedBook> => {
 };
 
 /**
- * 保存された本のデータを取得する
+ * 指定されたIDの本のデータを取得する
  */
-export const getBook = async (): Promise<SavedBook> => {
+export const getBookById = async (id: number): Promise<SavedBook | null> => {
   try {
-    const data = await AsyncStorage.getItem(STORAGE_KEY);
-    let books: SavedBook[] = [];
-
-    if (data) {
-      books = JSON.parse(data);
-    }
-
-    // 本がない場合は新しい本を作成
-    if (books.length === 0) {
-      return createEmptyBook();
-    }
-
-    // 最初の本を返す
-    return books[0];
+    const books = await getSavedBooks();
+    return books.find(book => book.id === id) || null;
   } catch (error) {
     console.error('本の取得に失敗しました:', error);
-    // エラーが発生した場合も新しい本を作成
-    return createEmptyBook();
+    return null;
   }
 };
 
