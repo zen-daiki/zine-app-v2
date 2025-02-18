@@ -3,6 +3,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { router } from 'expo-router';
 import Button from '@/components/Button';
 import ImageViewer from '@/components/ImageViewer';
+import { createEmptyBook } from '@/libs/storage';
 
 const PlaceholderImage = require('@/assets/images/background-image_02.png');
 
@@ -10,8 +11,16 @@ export default function Index() {
   const { width } = useWindowDimensions();
   const imageHeight = width * 0.2;
 
-  const handleNavigateToCreate = () => {
-    router.push('/(edit)/chooseBookSize');
+  const handleCreateNewBook = async () => {
+    try {
+      const newBook = await createEmptyBook();
+      router.push({
+        pathname: '/(edit)/chooseBookSize',
+        params: { id: newBook.id.toString() }
+      });
+    } catch (error) {
+      console.error('本の作成に失敗しました:', error);
+    }
   };
 
   return (
@@ -36,7 +45,7 @@ export default function Index() {
             resizeMode="cover"
           />
         <View style={styles.buttonContainer}>
-          <Button theme="primary" label="新しく作る" onPress={handleNavigateToCreate} />
+          <Button theme="primary" label="新しく作る" onPress={handleCreateNewBook} />
         </View>
       </View>
       </View>
