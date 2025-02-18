@@ -18,7 +18,7 @@ const inputProps = {
 };
 
 export default function EditBookCoverScreen() {
-  const { size, coverType, id } = useLocalSearchParams<{ size: string; coverType: string; id?: string }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const titleInputRef = useRef<any>(null);
   const [formState, setFormState] = useState({
     title: '',
@@ -106,7 +106,6 @@ export default function EditBookCoverScreen() {
       setAppState(prev => ({ ...prev, isLoading: true }));
 
       const updatedBook = await updateBook(appState.book.id, {
-        size: size || appState.book.size,
         cover: {
           ...appState.book.cover,
           title: formState.title.trim(),
@@ -140,7 +139,10 @@ export default function EditBookCoverScreen() {
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => router.push({
+            pathname: '/(edit)/chooseBookCover',
+            params: { id }
+          })}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
