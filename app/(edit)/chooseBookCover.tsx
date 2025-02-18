@@ -3,18 +3,31 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COVER_OPTIONS } from '@/constants/book';
 import { CoverOptionItem } from '@/components/CoverOption';
+import { updateBook } from '@/libs/storage';
 
 export default function ChooseCoverScreen() {
-  const { size, id } = useLocalSearchParams<{ size: string; id: string }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
 
-  const handleChooseCover = (coverType: string) => {
-    router.push({
-      pathname: '/(edit)/editBookCover',
-      params: {
-        size,
-        coverType,
-      },
-    });
+  const handleChooseCover = async (coverType: string) => {
+    try {
+      if (!id) return;
+
+      await updateBook(Number(id), {
+        cover: {
+          color: coverType,
+          imageUrl: '',
+          title: '',
+          subtitle: ''
+        }
+      });
+
+      router.push({
+        pathname: '/(edit)/editBookCover',
+        params: { id}
+      });
+    } catch (error) {
+      console.error('本のカバー情報の更新に失敗しました:', error);
+    }
   };
 
   return (
@@ -22,7 +35,10 @@ export default function ChooseCoverScreen() {
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
-          onPress={() => router.push('/(edit)/chooseBookSize')}
+          onPress={() => router.push({
+            pathname: '/(edit)/chooseBookSize',
+            params: { id }
+          })}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -43,7 +59,7 @@ export default function ChooseCoverScreen() {
             />
           ))}
           <View style={styles.content}>
-            <Text>選択されたサイズ: {size}</Text>
+            <Text style={styles.headerTitle}>カバーを選択してください</Text>
           </View>
         </View>
       </ScrollView>
