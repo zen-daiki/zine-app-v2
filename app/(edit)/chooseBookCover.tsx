@@ -23,7 +23,7 @@ export default function ChooseCoverScreen() {
 
       router.push({
         pathname: '/(edit)/editBookCover',
-        params: { id}
+        params: { id }
       });
     } catch (error) {
       console.error('本のカバー情報の更新に失敗しました:', error);
