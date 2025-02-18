@@ -4,17 +4,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { SizeOption } from '@/components/SizeOption';
 import { BOOK_SIZES } from '@/constants/book';
 import type { BookSize } from '@/types/book';
+import { updateBook } from '@/libs/storage';
 
 export default function ChooseBookScreen() {
-  const handleChooseSize = (size: BookSize['type']) => {
-    router.push({
-      pathname: '/(edit)/chooseBookCover',
-      params: { size }
-    });
-  };
-
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+
+  const handleChooseSize = async (size: BookSize['type']) => {
+    try {
+      if (!id) return;
+
+      await updateBook(Number(id), { size });
+
+      router.push({
+        pathname: '/(edit)/chooseBookCover',
+        params: { id }
+      });
+    } catch (error) {
+      console.error('本のサイズの更新に失敗しました:', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
