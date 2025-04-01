@@ -1,10 +1,13 @@
 import { View, StyleSheet, Image, Pressable, ScrollView } from 'react-native';
 import { Text, TextInput, Button } from 'react-native-paper';
-import { router, useRouter, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import { pickImage } from '@/libs/image';
 import { getBookById, updateBook, type SavedBook } from '@/libs/storage';
+import { EditHeader } from '@/components/edit/EditHeader';
+import { LoadingView } from '@/components/common/LoadingView';
+import { ErrorText } from '@/components/common/ErrorText';
 
 // レイアウトオプションの定義
 const layoutOptions = [
@@ -25,106 +28,175 @@ interface PageData {
   };
 }
 
+// ページフォームの状態の型定義
+interface PageFormState {
+  layout: LayoutOption;
+  image: string;
+  text: string;
+}
+
+// アプリケーションの状態の型定義
+interface AppState {
+  book: SavedBook | null;
+  currentPage: number;
+  isLoading: boolean;
+  isInitialLoad: boolean;
+  error: string | null;
+}
+
 export default function EditPagesScreen() {
-  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [book, setBook] = useState<SavedBook | null>(null);
-  const [selectedLayout, setSelectedLayout] = useState<LayoutOption>('textOnly');
-  const [pageImage, setPageImage] = useState('');
-  const [pageText, setPageText] = useState('');
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  // アプリケーションの状態
+  const [appState, setAppState] = useState<AppState>({
+    book: null,
+    currentPage: 1,
+    isLoading: false,
+    isInitialLoad: true,
+    error: null,
+  });
+  
+  // ページフォームの状態
+  const [pageForm, setPageForm] = useState<PageFormState>({
+    layout: 'textOnly',
+    image: '',
+    text: '',
+  });
+
+  // 状態の更新ヘルパー関数
+  const updateAppState = (updates: Partial<AppState>) => {
+    setAppState(prev => ({ ...prev, ...updates }));
+  };
+
+  const updatePageForm = (updates: Partial<PageFormState>) => {
+    setPageForm(prev => ({ ...prev, ...updates }));
+  };
 
   // 初期データの読み込み
   useEffect(() => {
     const loadBook = async () => {
       if (!id) {
-        setError('本のIDが指定されていません');
+        updateAppState({ error: '本のIDが指定されていません', isInitialLoad: false });
         return;
       }
 
       try {
+        updateAppState({ isLoading: true });
         const savedBook = await getBookById(Number(id));
+        
         if (savedBook) {
-          setBook(savedBook);
+          updateAppState({ book: savedBook });
           // 現在のページのデータがあれば読み込む
-          const currentPageData = savedBook.pages?.[currentPage - 1];
+          const currentPageData = savedBook.pages?.[appState.currentPage - 1];
           if (currentPageData) {
-            setSelectedLayout(currentPageData.layout as LayoutOption);
-            setPageImage(currentPageData.content.img || '');
-            setPageText(currentPageData.content.text || '');
+            updatePageForm({
+              layout: currentPageData.layout as LayoutOption,
+              image: currentPageData.content.img || '',
+              text: currentPageData.content.text || '',
+            });
+          } else {
+            // 新しいページの場合はフォームをリセット
+            updatePageForm({
+              layout: 'textOnly',
+              image: '',
+              text: '',
+            });
           }
         } else {
-          setError('本が見つかりませんでした');
+          updateAppState({ error: '本が見つかりませんでした' });
         }
       } catch (error) {
-        setError('本の読み込みに失敗しました');
         console.error('本の読み込みに失敗しました:', error);
+        updateAppState({ error: '本の読み込みに失敗しました' });
       } finally {
-        setIsInitialLoad(false);
+        updateAppState({ isLoading: false, isInitialLoad: false });
       }
     };
 
     loadBook();
-  }, [id, currentPage]);
+  }, [id, appState.currentPage]);
+
+  // ページコンテンツのバリデーション
+  const isPageContentValid = (): boolean => {
+    if (!pageForm.layout) return false;
+
+    switch (pageForm.layout) {
+      case 'fullImage':
+        return !!pageForm.image;
+      case 'imageWithText':
+        return !!pageForm.image && !!pageForm.text.trim();
+      case 'textOnly':
+        return !!pageForm.text.trim();
+      default:
+        return false;
+    }
+  };
 
   // 現在のページデータを保存する関数
   const saveCurrentPage = async () => {
-    if (!book || !id) return;
+    if (!appState.book || !id) return null;
 
     // フィールドが空の場合は保存しない
     if (!isPageContentValid()) {
-      return book;
+      return appState.book;
     }
 
-    const pageContent = {
-      page: currentPage,
-      layout: selectedLayout,
+    const pageContent: PageData = {
+      page: appState.currentPage,
+      layout: pageForm.layout,
       content: {
-        img: pageImage,
-        text: pageText,
+        img: pageForm.image,
+        text: pageForm.text,
       },
     };
 
-    let updatedPages = [...(book.pages || [])];
+    let updatedPages = [...(appState.book.pages || [])];
     
     // 現在のページが配列の範囲内にある場合のみ更新
-    if (currentPage <= updatedPages.length) {
-      updatedPages[currentPage - 1] = pageContent;
+    if (appState.currentPage <= updatedPages.length) {
+      updatedPages[appState.currentPage - 1] = pageContent;
     } else {
       // 新しいページを追加する場合
       updatedPages.push(pageContent);
     }
 
-    const updatedBook = await updateBook(Number(id), {
-      pages: updatedPages,
-    });
+    try {
+      const updatedBook = await updateBook(Number(id), {
+        pages: updatedPages,
+      });
 
-    setBook(updatedBook);
-    return updatedBook;
-  };
-
-  const handleImagePick = async () => {
-    const result = await pickImage();
-    if (result) {
-      setPageImage(result);
-      // 画像が選択されたら、レイアウトを画像ありに変更
-      if (selectedLayout === 'textOnly') {
-        setSelectedLayout('imageWithText');
-      }
+      updateAppState({ book: updatedBook });
+      return updatedBook;
+    } catch (error) {
+      console.error('ページの保存に失敗しました:', error);
+      updateAppState({ error: 'ページの保存に失敗しました' });
+      return null;
     }
   };
 
+  // 画像選択ハンドラー
+  const handleImagePick = async () => {
+    const result = await pickImage();
+    if (result) {
+      // 画像が選択されたら、レイアウトを画像ありに変更
+      updatePageForm({
+        image: result,
+        layout: pageForm.layout === 'textOnly' ? 'imageWithText' : pageForm.layout,
+      });
+    }
+  };
+
+  // 前のページに戻るハンドラー
   const handleBack = async () => {
-    if (currentPage > 1) {
+    if (appState.currentPage > 1) {
       try {
         // 現在のページを保存
         await saveCurrentPage();
         // 前のページに戻る
-        setCurrentPage(currentPage - 1);
+        updateAppState({ currentPage: appState.currentPage - 1 });
       } catch (error) {
         console.error('ページの保存に失敗しました:', error);
+        updateAppState({ error: 'ページの保存に失敗しました' });
       }
     } else {
       router.push({
@@ -134,23 +206,28 @@ export default function EditPagesScreen() {
     }
   };
 
+  // ページ保存と次ページへの移動ハンドラー
   const handleSavePage = async () => {
     try {
       // 現在のページを保存
       const updatedBook = await saveCurrentPage();
       if (updatedBook) {
         // フィールドをリセット（次のページ用）
-        setSelectedLayout('textOnly');
-        setPageImage('');
-        setPageText('');
+        updatePageForm({
+          layout: 'textOnly',
+          image: '',
+          text: '',
+        });
         // 次のページへ進む
-        setCurrentPage(prev => prev + 1);
+        updateAppState({ currentPage: appState.currentPage + 1 });
       }
     } catch (error) {
       console.error('ページの保存に失敗しました:', error);
+      updateAppState({ error: 'ページの保存に失敗しました' });
     }
   };
 
+  // 完了ハンドラー
   const handleFinish = async () => {
     try {
       // 現在のページを保存
@@ -158,120 +235,111 @@ export default function EditPagesScreen() {
       router.push('/');
     } catch (error) {
       console.error('ページの保存に失敗しました:', error);
+      updateAppState({ error: 'ページの保存に失敗しました' });
     }
   };
 
-  const isPageContentValid = (): boolean => {
-    if (!selectedLayout) return false;
+  // レイアウトオプションを描画するコンポーネント
+  const renderLayoutOptions = () => (
+    <>
+      <Text style={styles.sectionTitle}>レイアウトを選択</Text>
+      <View style={styles.layoutOptions}>
+        {layoutOptions.map((option) => (
+          <Pressable
+            key={option.id}
+            style={[
+              styles.layoutOption,
+              pageForm.layout === option.id && styles.selectedLayoutOption,
+            ]}
+            onPress={() => updatePageForm({ layout: option.id })}
+          >
+            <Text style={styles.layoutOptionText}>{option.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </>
+  );
 
-    switch (selectedLayout) {
-      case 'fullImage':
-        return !!pageImage;
-      case 'imageWithText':
-        return !!pageImage && !!pageText.trim();
-      case 'textOnly':
-        return !!pageText.trim();
-      default:
-        return false;
-    }
-  };
+  // ページコンテンツを描画するコンポーネント
+  const renderPageContent = () => (
+    <>
+      {(pageForm.layout === 'fullImage' || pageForm.layout === 'imageWithText') && (
+        <View style={styles.imageSection}>
+          <Text style={styles.sectionTitle}>画像</Text>
+          <Pressable style={styles.imageContainer} onPress={handleImagePick}>
+            {pageForm.image ? (
+              <Image source={{ uri: pageForm.image }} style={styles.image} />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons name="image-outline" size={48} color="#fff" />
+                <Text style={styles.imagePlaceholderText}>タップして画像を選択</Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
+      )}
+
+      {(pageForm.layout === 'textOnly' || pageForm.layout === 'imageWithText') && (
+        <View style={styles.textSection}>
+          <Text style={styles.sectionTitle}>テキスト</Text>
+          <TextInput
+            multiline
+            numberOfLines={5}
+            value={pageForm.text}
+            onChangeText={(text) => updatePageForm({ text })}
+            style={styles.textInput}
+            placeholder="ここにテキストを入力..."
+            placeholderTextColor="#aaa"
+          />
+        </View>
+      )}
+    </>
+  );
+
+  // ナビゲーションボタンを描画するコンポーネント
+  const renderNavigationButtons = () => (
+    <View style={styles.buttonsContainer}>
+      <Button
+        mode="contained"
+        onPress={handleSavePage}
+        style={styles.button}
+        labelStyle={styles.buttonLabel}
+        disabled={!isPageContentValid()}
+      >
+        保存して次のページへ
+      </Button>
+      <Button
+        mode="outlined"
+        onPress={handleFinish}
+        style={[styles.button, styles.finishButton]}
+        labelStyle={styles.finishButtonLabel}
+      >
+        完了
+      </Button>
+    </View>
+  );
+
+  // ローディング中の表示
+  if (appState.isLoading && appState.isInitialLoad) {
+    return <LoadingView message="本を読み込み中..." />;
+  }
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Pressable
-          style={styles.backButton}
-          onPress={handleBack}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </Pressable>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>ページ {currentPage} の編集（ID: {id}）</Text>
-        </View>
-      </View>
+      <EditHeader
+        title={`ページ ${appState.currentPage} の編集（ID: ${id}）`}
+        onBackPress={handleBack}
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.contentContainer}>
-          <Text style={styles.sectionTitle}>レイアウトを選択</Text>
-          <View style={styles.layoutOptions}>
-            {layoutOptions.map((option) => (
-              <Pressable
-                key={option.id}
-                style={[
-                  styles.layoutOption,
-                  selectedLayout === option.id && styles.layoutOptionSelected,
-                ]}
-                onPress={() => {
-                  setSelectedLayout(option.id);
-                  // レイアウト変更時にフィールドをリセット
-                  if (option.id === 'textOnly') {
-                    setPageImage('');
-                  }
-                }}
-              >
-                <Text style={styles.layoutOptionText}>{option.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {selectedLayout !== 'textOnly' && (
-            <View style={styles.imageSection}>
-              <Pressable style={styles.imageContainer} onPress={handleImagePick}>
-                {pageImage ? (
-                  <Image source={{ uri: pageImage }} style={styles.pageImage} resizeMode="cover" />
-                ) : (
-                  <View style={styles.placeholderContainer}>
-                    <Ionicons name="image-outline" size={48} color="#666" />
-                    <Text style={styles.placeholderText}>タップして画像を選択</Text>
-                  </View>
-                )}
-              </Pressable>
-            </View>
-          )}
-
-          {selectedLayout !== 'fullImage' && (
-            <TextInput
-              label="テキスト"
-              value={pageText}
-              onChangeText={setPageText}
-              style={styles.input}
-              mode="outlined"
-              outlineColor="#FFD700"
-              activeOutlineColor="#FFD700"
-              textColor="#000000"
-              multiline
-              numberOfLines={4}
-              theme={{
-                colors: {
-                  background: '#FFFFFF',
-                },
-              }}
-            />
-          )}
+          {appState.error && <ErrorText message={appState.error} />}
+          
+          {renderLayoutOptions()}
+          {renderPageContent()}
+          {renderNavigationButtons()}
         </View>
       </ScrollView>
-
-      <View style={styles.footer}>
-        <Button
-          mode="contained"
-          onPress={handleSavePage}
-          style={styles.button}
-          labelStyle={styles.buttonLabel}
-          disabled={!isPageContentValid()}
-          buttonColor="#FFFFFF"
-        >
-          次のページへ
-        </Button>
-        <Button
-          mode="outlined"
-          onPress={handleFinish}
-          style={[styles.button, styles.finishButton]}
-          labelStyle={[styles.buttonLabel, styles.finishButtonLabel]}
-        >
-          完了
-        </Button>
-      </View>
     </View>
   );
 }
@@ -281,108 +349,97 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#25292e',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  backButton: {
-    paddingLeft: 16,
-  },
-  headerTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-    marginRight: 40,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
   content: {
     flex: 1,
   },
   contentContainer: {
     padding: 16,
-    paddingBottom: 32,
+    gap: 20,
   },
   sectionTitle: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   layoutOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 24,
+    gap: 10,
+    marginBottom: 16,
   },
   layoutOption: {
-    padding: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#2d3238',
+    backgroundColor: '#3a3f44',
     borderWidth: 1,
-    borderColor: '#666',
+    borderColor: '#3a3f44',
   },
-  layoutOptionSelected: {
+  selectedLayoutOption: {
     borderColor: '#FFD700',
-    backgroundColor: '#3d4248',
+    backgroundColor: '#4a4f54',
   },
   layoutOptionText: {
-    color: '#ffffff',
+    color: '#fff',
     fontSize: 14,
   },
   imageSection: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   imageContainer: {
-    width: '100%',
-    height: 200,
-    backgroundColor: '#2d3238',
-    borderRadius: 12,
+    aspectRatio: 4/3,
+    backgroundColor: '#3a3f44',
+    borderRadius: 8,
     overflow: 'hidden',
-  },
-  pageImage: {
-    width: '100%',
-    height: '100%',
-  },
-  placeholderContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  placeholderText: {
-    marginTop: 8,
-    color: '#666',
-    fontSize: 14,
+  image: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
-  input: {
+  imagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePlaceholderText: {
+    color: '#fff',
+    marginTop: 8,
+  },
+  textSection: {
     marginBottom: 16,
   },
-  footer: {
-    padding: 16,
-    paddingBottom: 32,
-    backgroundColor: '#25292e',
-    borderTopWidth: 1,
-    borderTopColor: '#333',
-    gap: 8,
+  textInput: {
+    backgroundColor: '#3a3f44',
+    borderRadius: 8,
+    padding: 12,
+    color: '#fff',
+    height: 150,
+    textAlignVertical: 'top',
+  },
+  buttonsContainer: {
+    gap: 12,
+    marginTop: 16,
   },
   button: {
-    height: 48,
-    justifyContent: 'center',
+    backgroundColor: '#FFD700',
+    borderRadius: 8,
+    paddingVertical: 6,
   },
   buttonLabel: {
     fontSize: 16,
-    fontWeight: 'bold',
     color: '#000000',
+    fontWeight: 'bold',
   },
   finishButton: {
+    backgroundColor: 'transparent',
     borderColor: '#FFD700',
   },
   finishButtonLabel: {
     color: '#FFD700',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
